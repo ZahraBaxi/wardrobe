@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Garment, My Wardrobe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&family=Inter:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a href="index.html" class="brand"><span class="mark">IA / 02</span> My Wardrobe</a>
+    <button class="nav-toggle" aria-label="Toggle navigation">Menu</button>
+    <nav class="site-nav">
+      <a href="index.html">Home</a>
+      <a href="wardrobe.html" aria-current="page">Wardrobe</a>
+      <a href="uniforms.html">Uniforms</a>
+      <a href="outfits.html">Outfits</a>
+      <a href="constitution.html">Constitution</a>
+      <a href="wishlist.html">Wishlist</a>
+      <a href="repairs.html">Repairs</a>
+      <a href="statistics.html">Statistics</a>
+      <a href="field-notes.html">Field Notes</a>
+      <a href="about.html">About</a>
+      <a href="closet-admin.html">Admin</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="tight">
+    <div class="wrap" id="content">
+      <!-- populated by JS -->
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span>Article XI: A repaired garment is not damaged. It is lived in.</span>
+    <span>&larr; <a href="wardrobe.html" style="text-decoration:none">Back to Wardrobe</a></span>
+  </div>
+</footer>
+
+<script src="js/data.js"></script>
+<script src="js/back4app-client.js"></script>
+<script src="js/wardrobe-loader.js"></script>
+<script src="js/app.js"></script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const content = document.getElementById("content");
+  content.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+  wardrobeReady.then(() => {
+    const g = byId(params.get("id"));
+
+    if (!g) {
+      content.innerHTML = `<div class="empty-state">Garment not found. <a href="wardrobe.html">Return to the wardrobe.</a></div>`;
+      return;
+    }
+
+    document.title = `${g.name}, My Wardrobe`;
+
+    const repairHistory = REPAIRS.filter((r) => r.garmentId === g.id);
+    const repairRows = repairHistory.length
+      ? repairHistory.map((r) => `${formatDate(r.date)}, ${r.method}`).join("<br>")
+      : "No repairs yet.";
+
+    // three suggested outfits: pair this garment with random compatible pieces
+    function suggestOutfit() {
+      const isTop = g.category === "top";
+      const isBottom = g.category === "bottom";
+      const top = isTop ? g : pickRandom(WARDROBE.filter((x) => x.category === "top"));
+      const bottom = isBottom ? g : pickRandom(WARDROBE.filter((x) => x.category === "bottom"));
+      const shoe = g.category === "shoe" ? g : pickRandom(WARDROBE.filter((x) => x.category === "shoe"));
+      return [top, bottom, shoe].filter(Boolean).map((x) => x.name).join(" + ");
+    }
+    const suggestions = [suggestOutfit(), suggestOutfit(), suggestOutfit()];
+
+    const photoMarkup = g.photo
+      ? `<img src="${g.photo.url}" alt="${g.name}" style="width:100%; border-radius:4px; border:1px solid var(--line); object-fit:cover;">`
+      : `<div class="detail-photo" style="background:${g.swatch}22; color:${g.swatch}">&#9679;</div>`;
+
+    content.innerHTML = `
+      <p class="eyebrow">${g.category} &middot; ${g.role}</p>
+      <h1>${g.name}</h1>
+
+      <div class="detail-grid" style="margin-top:var(--space-3)">
+        <div>
+          ${photoMarkup}
+          <div class="tag-row" style="margin-top:1em">${g.tags.map((t) => `<span class="tag">${t}</span>`).join("")}</div>
+        </div>
+        <div>
+          <table class="spec-table">
+            <tr><td>Brand</td><td>${g.brand}</td></tr>
+            <tr><td>Color</td><td>${g.color}</td></tr>
+            <tr><td>Material</td><td>${g.material}</td></tr>
+            <tr><td>Size</td><td>${g.size}</td></tr>
+            <tr><td>Date Acquired</td><td>${formatDate(g.dateAcquired)}</td></tr>
+            <tr><td>Where Purchased</td><td>${g.wherePurchased}</td></tr>
+            <tr><td>Cost</td><td>$${g.cost} <span style="color:var(--ink-soft)">(${costPerWear(g)} per wear)</span></td></tr>
+            <tr><td>Made In</td><td>${g.madeIn}</td></tr>
+            <tr><td>Love Rating</td><td class="love-rating">${loveStars(g.loveRating)}</td></tr>
+            <tr><td>Times Worn</td><td>${g.timesWorn}</td></tr>
+            <tr><td>Uniform Categories</td><td>${g.uniforms.join(", ")}</td></tr>
+            <tr><td>Season</td><td>${g.season.join(", ")}</td></tr>
+            <tr><td>Care</td><td>${[g.care?.wash, g.care?.dry].filter(Boolean).join(" · ")}</td></tr>
+            <tr><td>Repair History</td><td>${repairRows}</td></tr>
+            <tr><td>Visible Mending Ideas</td><td>${g.mendingIdeas}</td></tr>
+            <tr><td>Notes</td><td>${g.notes}</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="specimen-card" data-tag="Suggested Outfits" style="margin-top:var(--space-4)">
+        <ul style="margin:0.4em 0 0; padding-left:1.2em">
+          ${suggestions.map((s) => `<li>${s}</li>`).join("")}
+        </ul>
+      </div>
+    `;
+  });
+</script>
+</body>
+</html>

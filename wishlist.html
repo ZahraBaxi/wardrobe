@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wishlist, My Wardrobe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&family=Inter:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a href="index.html" class="brand"><span class="mark">IA / 06</span> My Wardrobe</a>
+    <button class="nav-toggle" aria-label="Toggle navigation">Menu</button>
+    <nav class="site-nav">
+      <a href="index.html">Home</a>
+      <a href="wardrobe.html">Wardrobe</a>
+      <a href="uniforms.html">Uniforms</a>
+      <a href="outfits.html">Outfits</a>
+      <a href="constitution.html">Constitution</a>
+      <a href="wishlist.html" aria-current="page">Wishlist</a>
+      <a href="repairs.html">Repairs</a>
+      <a href="statistics.html">Statistics</a>
+      <a href="field-notes.html">Field Notes</a>
+      <a href="about.html">About</a>
+      <a href="closet-admin.html">Admin</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="tight">
+    <div class="wrap">
+      <p class="eyebrow">Article IX, Buying</p>
+      <h1>Wishlist</h1>
+      <p class="lede">This page is for eventual replacements only. It is not a shopping list, it exists to slow purchases down, not speed them up.</p>
+
+      <div class="uniform-grid" id="wish-grid" style="margin-top:var(--space-3)"></div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span>If the answer to most of these is "no," don't buy it.</span>
+    <span>&larr; <a href="index.html" style="text-decoration:none">Back home</a></span>
+  </div>
+</footer>
+
+<script src="js/data.js"></script>
+<script src="js/back4app-client.js"></script>
+<script src="js/wardrobe-loader.js"></script>
+<script src="js/app.js"></script>
+<script>
+  const grid = document.getElementById("wish-grid");
+  grid.innerHTML = `<div class="empty-state">Loading…</div>`;
+  siteDataReady.then(() => {
+    if (!WISHLIST.length) {
+      grid.innerHTML = `<div class="empty-state">Nothing on the wishlist right now.</div>`;
+      return;
+    }
+    grid.innerHTML = "";
+    WISHLIST.forEach((w) => {
+      const card = document.createElement("div");
+      card.className = "wish-card";
+      card.innerHTML = `
+        <span class="priority">${w.priority} Priority</span>
+        <h3 style="margin-top:0.3em">${w.name}</h3>
+        <dl>
+          <dt>Why is this needed?</dt>
+          <dd>${w.why}</dd>
+          <dt>What will it replace?</dt>
+          <dd>${w.replaces}</dd>
+          <dt>Can three outfits already be imagined?</dt>
+          <dd>${w.threeOutfits ? "Yes" : "Not yet"}</dd>
+          <dt>Notes</dt>
+          <dd>${w.notes}</dd>
+        </dl>
+      `;
+      grid.appendChild(card);
+    });
+  });
+</script>
+</body>
+</html>

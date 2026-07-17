@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Outfits, My Wardrobe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&family=Inter:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a href="index.html" class="brand"><span class="mark">IA / 10</span> My Wardrobe</a>
+    <button class="nav-toggle" aria-label="Toggle navigation">Menu</button>
+    <nav class="site-nav">
+      <a href="index.html">Home</a>
+      <a href="wardrobe.html">Wardrobe</a>
+      <a href="uniforms.html">Uniforms</a>
+      <a href="outfits.html" aria-current="page">Outfits</a>
+      <a href="constitution.html">Constitution</a>
+      <a href="wishlist.html">Wishlist</a>
+      <a href="repairs.html">Repairs</a>
+      <a href="statistics.html">Statistics</a>
+      <a href="field-notes.html">Field Notes</a>
+      <a href="about.html">About</a>
+      <a href="closet-admin.html">Admin</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="tight">
+    <div class="wrap">
+      <p class="eyebrow">Field Notebook, Page 1</p>
+      <h1>Outfits</h1>
+      <p class="lede">A random generator for today's inspiration, and a running record of the combinations that actually worked.</p>
+
+      <div class="section-head" style="margin-top:var(--space-3)">
+        <div>
+          <h2 style="font-size:1.2rem">Today's Inspiration</h2>
+        </div>
+        <button class="btn quiet" id="randomize-btn">&#8635; Randomize</button>
+      </div>
+
+      <div class="specimen-card" data-tag="Outfit Specimen">
+        <div class="outfit-slots" id="outfit-display"></div>
+        <div style="margin-top:1.2em; display:flex; gap:0.6em; align-items:center; flex-wrap:wrap">
+          <button class="btn primary" id="love-btn">Love This Outfit</button>
+          <span id="love-status" style="font-family:var(--font-mono); font-size:0.75rem; color:var(--ink-soft)"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Article XII, Repetition</p>
+          <h2>Loved &amp; Tested Outfits</h2>
+        </div>
+      </div>
+      <p class="lede" style="font-size:0.92rem">Combinations already worn and worth repeating. Not aspirational, proven.</p>
+      <div class="uniform-grid" id="loved-grid" style="margin-top:1.4em"></div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span>A good outfit is worth repeating, not just admiring once.</span>
+    <span>&larr; <a href="index.html" style="text-decoration:none">Back home</a></span>
+  </div>
+</footer>
+
+<script src="js/data.js"></script>
+<script src="js/back4app-client.js"></script>
+<script src="js/wardrobe-loader.js"></script>
+<script src="js/app.js"></script>
+<script>
+  const display = document.getElementById("outfit-display");
+  const lovedGrid = document.getElementById("loved-grid");
+  const loveStatus = document.getElementById("love-status");
+  display.innerHTML = `<div class="empty-state">Loading your wardrobe…</div>`;
+  lovedGrid.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+  let currentOutfit = null;
+
+  function refresh() {
+    currentOutfit = generateOutfit();
+    renderOutfit(display, currentOutfit);
+    loveStatus.textContent = "";
+  }
+
+  function renderLoved() {
+    if (!OUTFITS.length) {
+      lovedGrid.innerHTML = `<div class="empty-state">No loved outfits saved yet, generate one above and click "Love This Outfit".</div>`;
+      return;
+    }
+    lovedGrid.innerHTML = "";
+    [...OUTFITS].reverse().forEach((o) => {
+      const garments = o.garmentIds.map(byId).filter(Boolean);
+      const card = document.createElement("div");
+      card.className = "uniform-card";
+      card.innerHTML = `
+        <h3>${o.name || "Untitled Outfit"}</h3>
+        <p style="font-size:0.85rem; color:var(--ink-soft)">${o.occasion || ""}</p>
+        <div class="tag-row" style="margin:0.6em 0">
+          ${garments.map((g) => `<a class="tag" href="item.html?id=${g.id}">${g.name}</a>`).join("")}
+        </div>
+        <p style="font-size:0.85rem">${o.notes || ""}</p>
+      `;
+      lovedGrid.appendChild(card);
+    });
+  }
+
+  siteDataReady.then(() => {
+    refresh();
+    renderLoved();
+    document.getElementById("randomize-btn").addEventListener("click", refresh);
+
+    document.getElementById("love-btn").addEventListener("click", async () => {
+      if (!currentOutfit) return;
+      const garmentIds = Object.values(currentOutfit).filter(Boolean).map((g) => g.id);
+      if (!garmentIds.length) return;
+      loveStatus.textContent = "saving…";
+      try {
+        const name = garmentIds.map((id) => byId(id)?.name).filter(Boolean).slice(0, 2).join(" + ");
+        const created = await createOutfit({
+          name: name || "Loved Outfit",
+          garmentIds: garmentIds,
+          occasion: "",
+          notes: "",
+          loveRating: 5
+        });
+        OUTFITS.push({ id: created.objectId, name, garmentIds, occasion: "", notes: "", loveRating: 5 });
+        renderLoved();
+        loveStatus.textContent = "saved to loved outfits";
+      } catch (error) {
+        loveStatus.textContent = "could not save: " + error.message;
+      }
+    });
+  });
+</script>
+</body>
+</html>

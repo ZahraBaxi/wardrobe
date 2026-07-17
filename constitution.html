@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Constitution, My Wardrobe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&family=Inter:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="read-progress" id="read-progress"></div>
+
+<header class="site-header">
+  <div class="wrap">
+    <a href="index.html" class="brand"><span class="mark">IA / 04</span> My Wardrobe</a>
+    <button class="nav-toggle" aria-label="Toggle navigation">Menu</button>
+    <nav class="site-nav">
+      <a href="index.html">Home</a>
+      <a href="wardrobe.html">Wardrobe</a>
+      <a href="uniforms.html">Uniforms</a>
+      <a href="outfits.html">Outfits</a>
+      <a href="constitution.html" aria-current="page">Constitution</a>
+      <a href="wishlist.html">Wishlist</a>
+      <a href="repairs.html">Repairs</a>
+      <a href="statistics.html">Statistics</a>
+      <a href="field-notes.html">Field Notes</a>
+      <a href="about.html">About</a>
+      <a href="closet-admin.html">Admin</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="tight">
+    <div class="wrap">
+      <p class="eyebrow" style="text-align:center">Indigo Americana</p>
+      <h1 style="text-align:center">The Wardrobe Constitution</h1>
+      <p class="lede" style="text-align:center; max-width:620px; margin-left:auto; margin-right:auto">Fourteen articles, each one collapsible. Draw a random tenet for the day, or jump straight to an article from the index.</p>
+
+      <div style="display:flex; justify-content:center; margin:1.4em 0">
+        <button class="btn primary" id="draw-tenet-btn">Draw a Tenet</button>
+      </div>
+      <div id="tenet-card"></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap const-layout">
+      <nav class="const-toc" id="const-toc" aria-label="Table of contents"></nav>
+
+      <div class="const-articles" id="const-articles">
+        <div class="const-preamble">
+          <p>My wardrobe is a collection of garments that support a creative, practical, and intentional life. It values craftsmanship over trends, longevity over novelty, and personal expression over fashion cycles.</p>
+          <p>Every piece should have a purpose, age gracefully, and contribute to a wardrobe that feels unmistakably mine.</p>
+        </div>
+        <!-- articles injected here -->
+        <div class="closing">
+          <p>I do not build a wardrobe to impress others. I build one to support a life of curiosity, craftsmanship, creativity, and care. My clothing is meant to be worn, repaired, remembered, and enjoyed. Every piece should contribute to a collection that feels authentic, functional, and enduring.</p>
+          <p class="motto-final">Own less by choosing better. Wear often. Repair proudly. Buy with intention.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span>Ratified in ongoing revision, per Article XIV.</span>
+    <span>&larr; <a href="index.html" style="text-decoration:none">Back home</a></span>
+  </div>
+</footer>
+
+<script src="js/app.js"></script>
+<script>
+  const ARTICLES = [
+    {
+      title: "Purpose",
+      tenet: "Every garment should belong to at least one of my six uniforms.",
+      html: `<p>My wardrobe should serve these parts of my life:</p>
+        <ul><li>Everyday Casual</li><li>Weekend</li><li>Work</li><li>Field</li><li>Party</li><li>Home</li></ul>
+        <p>Every garment should belong to at least one of these uniforms.</p>`
+    },
+    {
+      title: "Style Identity",
+      tenet: "The goal is not to look fashionable. The goal is to look thoughtful.",
+      html: `<p>My style is Indigo Americana. It blends:</p>
+        <ul><li>American workwear</li><li>Japanese-inspired simplicity</li><li>Natural fibers</li><li>Craftsmanship</li><li>Museum-quality design</li><li>Functional clothing</li><li>Handmade details</li></ul>
+        <p>The goal is not to look fashionable. The goal is to look thoughtful.</p>`
+    },
+    {
+      title: "Materials",
+      tenet: "Avoid buying garments that feel disposable. Natural wear is welcome.",
+      html: `<p>Whenever possible, choose: Linen, Cotton, Hemp, Wool, Denim, Canvas, Leather.</p>
+        <p>Avoid buying garments that feel disposable. Natural wear is welcome.</p>`
+    },
+    {
+      title: "Color",
+      tenet: "Color should feel intentional rather than overwhelming.",
+      html: `<p><strong>Foundation:</strong> Indigo, Navy, Cream, Brown, Black, Olive</p>
+        <p><strong>Accent:</strong> Rust, Mustard, Tomato red, Forest green, Soft dusty pink (when it feels earthy)</p>
+        <p>Color should feel intentional rather than overwhelming.</p>`
+    },
+    {
+      title: "Texture",
+      tenet: "A simple outfit with rich texture beats a complicated outfit with flat fabrics.",
+      html: `<p>Texture is more important than pattern. Prefer garments with woven fabrics, slub linen, corduroy, denim, canvas, chunky knits, and visible stitching.</p>
+        <p>A simple outfit with rich texture is better than a complicated outfit with flat fabrics.</p>`
+    },
+    {
+      title: "Silhouette",
+      tenet: "Avoid buying clothing that requires discomfort to look good.",
+      html: `<p>Prefer relaxed, oversized, straight, wide, barrel leg, comfortable.</p>
+        <p>Avoid buying clothing that requires discomfort to look good.</p>`
+    },
+    {
+      title: "Layers",
+      tenet: "Layers should become more beautiful through wear.",
+      html: `<p>Layers define the wardrobe. Invest in barn jackets, overshirts, cardigans, knit sweaters, sweatshirts.</p>
+        <p>Layers should become more beautiful through wear.</p>`
+    },
+    {
+      title: "Clothing Roles",
+      tenet: "If a garment has no clear role, it should be reviewed.",
+      html: `<p>Every garment should have a job. Possible jobs include Everyday Hero, Supporting Basic, Character Piece, Work Essential, Field Essential, Home Comfort, Seasonal Favorite.</p>
+        <p>If a garment has no clear role, it should be reviewed.</p>`
+    },
+    {
+      title: "Buying",
+      tenet: "If the answer to most buying questions is no, don't buy it.",
+      html: `<p>Before purchasing, ask:</p>
+        <ul>
+          <li>Can I build at least three outfits with it using what I already own?</li>
+          <li>Does it strengthen Indigo Americana?</li>
+          <li>Does it replace something, or is it solving a real gap?</li>
+          <li>Would I still want this in ten years?</li>
+          <li>Does it feel like something I would discover naturally rather than chase because it's trendy?</li>
+        </ul>
+        <p>If the answer to most of these is "no," don't buy it.</p>`
+    },
+    {
+      title: "Letting Go",
+      tenet: "Do not donate because it is old, has visible repairs, or isn't trendy.",
+      html: `<p>Donate clothing when another garment performs the same role better, it no longer feels like me, I consistently choose something else instead, or it has had multiple honest opportunities and still isn't worn.</p>
+        <p>Do not donate because it is old, has visible repairs, isn't trendy, or someone else says I own too much.</p>`
+    },
+    {
+      title: "Mending",
+      tenet: "A repaired garment is not damaged. It is lived in.",
+      html: `<p>Repair before replacing. Visible repairs are part of the garment's story.</p>
+        <p><strong>Preferred repair colors:</strong> Cream, Indigo, Olive. <strong>Accent repairs:</strong> Rust, Mustard, Red.</p>
+        <p>A repaired garment is not damaged. It is lived in.</p>`
+    },
+    {
+      title: "Care",
+      tenet: "Clothing should be maintained with the expectation it will last for years.",
+      html: `<p>Clothing should be maintained with the expectation that it will last for many years.</p>
+        <p>Wash gently. Air dry when practical. Repair early. Store thoughtfully. Condition leather. Resole good shoes.</p>`
+    },
+    {
+      title: "Character",
+      tenet: "Some garments exist simply because they bring joy.",
+      html: `<p>Not every piece needs to be practical. Some garments exist because they bring joy, a favorite sweater, red Mary Janes, a beloved printed blouse, a meaningful jersey, handmade jewelry.</p>
+        <p>These pieces give the wardrobe personality and deserve a place when they continue to be worn with enthusiasm.</p>`
+    },
+    {
+      title: "Evolution",
+      tenet: "The goal is not perfection. The goal is coherence.",
+      html: `<p>The wardrobe is allowed to change. New pieces should strengthen the collection. Old pieces may leave with gratitude.</p>
+        <p>The goal is not perfection. The goal is coherence.</p>`
+    }
+  ];
+
+  const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII", "XIV"];
+
+  const toc = document.getElementById("const-toc");
+  const articlesEl = document.getElementById("const-articles");
+  const closing = articlesEl.querySelector(".closing");
+
+  ARTICLES.forEach((a, i) => {
+    const id = `article-${i + 1}`;
+
+    const tocLink = document.createElement("a");
+    tocLink.href = `#${id}`;
+    tocLink.innerHTML = `<span class="toc-num">${ROMAN[i]}</span> ${a.title}`;
+    toc.appendChild(tocLink);
+
+    const details = document.createElement("details");
+    details.className = "const-article";
+    details.id = id;
+    details.innerHTML = `
+      <summary>
+        <span class="article-num">Article ${ROMAN[i]}</span>
+        <span class="article-title">${a.title}</span>
+        <span class="chevron">&#9662;</span>
+      </summary>
+      <div class="const-article-body">${a.html}</div>
+    `;
+    articlesEl.insertBefore(details, closing);
+  });
+
+  // scroll progress
+  const progress = document.getElementById("read-progress");
+  window.addEventListener("scroll", () => {
+    const h = document.documentElement;
+    const pct = (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100;
+    progress.style.width = pct + "%";
+  });
+
+  // highlight active toc entry
+  const tocLinks = [...toc.querySelectorAll("a")];
+  const detailsEls = [...articlesEl.querySelectorAll(".const-article")];
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        const link = toc.querySelector(`a[href="#${entry.target.id}"]`);
+        if (!link) return;
+        if (entry.isIntersecting) {
+          tocLinks.forEach((l) => l.classList.remove("active"));
+          link.classList.add("active");
+        }
+      });
+    },
+    { rootMargin: "-20% 0px -70% 0px" }
+  );
+  detailsEls.forEach((d) => observer.observe(d));
+
+  toc.addEventListener("click", (e) => {
+    const a = e.target.closest("a");
+    if (!a) return;
+    const target = document.querySelector(a.getAttribute("href"));
+    if (target) target.open = true;
+  });
+
+  // draw a tenet
+  const tenetCard = document.getElementById("tenet-card");
+  document.getElementById("draw-tenet-btn").addEventListener("click", () => {
+    const i = Math.floor(Math.random() * ARTICLES.length);
+    const a = ARTICLES[i];
+    tenetCard.innerHTML = `
+      <div class="specimen-card tenet-reveal" data-tag="Article ${ROMAN[i]}">
+        <p style="font-family:var(--font-display); font-size:1.3rem; margin:0">"${a.tenet}"</p>
+        <a href="#article-${i + 1}" class="btn quiet" style="margin-top:0.8em" id="tenet-jump">Read Article ${ROMAN[i]} &rarr;</a>
+      </div>
+    `;
+    document.getElementById("tenet-jump").addEventListener("click", () => {
+      document.getElementById(`article-${i + 1}`).open = true;
+    });
+  });
+</script>
+</body>
+</html>

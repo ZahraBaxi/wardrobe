@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Statistics, My Wardrobe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&family=Inter:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a href="index.html" class="brand"><span class="mark">IA / 07</span> My Wardrobe</a>
+    <button class="nav-toggle" aria-label="Toggle navigation">Menu</button>
+    <nav class="site-nav">
+      <a href="index.html">Home</a>
+      <a href="wardrobe.html">Wardrobe</a>
+      <a href="uniforms.html">Uniforms</a>
+      <a href="outfits.html">Outfits</a>
+      <a href="constitution.html">Constitution</a>
+      <a href="wishlist.html">Wishlist</a>
+      <a href="repairs.html">Repairs</a>
+      <a href="statistics.html" aria-current="page">Statistics</a>
+      <a href="field-notes.html">Field Notes</a>
+      <a href="about.html">About</a>
+      <a href="closet-admin.html">Admin</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="tight">
+    <div class="wrap">
+      <p class="eyebrow">Field Data</p>
+      <h1>Statistics</h1>
+      <p class="lede">Curiosities, not KPIs, a look at what the collection is actually made of.</p>
+
+      <div class="stat-grid" style="margin-top:var(--space-4)" id="headline-stats"></div>
+
+      <div class="divider"></div>
+
+      <div class="uniform-grid">
+        <div class="uniform-card">
+          <h3>Most Worn Colors</h3>
+          <div id="bar-colors"></div>
+        </div>
+        <div class="uniform-card">
+          <h3>Fiber Composition</h3>
+          <div id="bar-materials"></div>
+        </div>
+        <div class="uniform-card">
+          <h3>Uniform Distribution</h3>
+          <div id="bar-uniforms"></div>
+        </div>
+        <div class="uniform-card">
+          <h3>Season Distribution</h3>
+          <div id="bar-seasons"></div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="uniform-grid">
+        <div class="uniform-card">
+          <h3>Most Worn Garments</h3>
+          <dl class="kv-list" id="most-worn"></dl>
+        </div>
+        <div class="uniform-card">
+          <h3>Best Cost Per Wear</h3>
+          <dl class="kv-list" id="best-cpw"></dl>
+        </div>
+        <div class="uniform-card">
+          <h3>Wardrobe Palette</h3>
+          <div id="palette" style="display:flex; flex-wrap:wrap; gap:0.5em; margin-top:0.6em"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span>Interesting rather than productivity-focused.</span>
+    <span>&larr; <a href="index.html" style="text-decoration:none">Back home</a></span>
+  </div>
+</footer>
+
+<script src="js/data.js"></script>
+<script src="js/back4app-client.js"></script>
+<script src="js/wardrobe-loader.js"></script>
+<script src="js/app.js"></script>
+<script>
+  const NATURAL_KEYWORDS = ["linen", "cotton", "wool", "leather", "canvas", "denim", "hemp", "ceramic"];
+
+  function isNatural(material) {
+    return NATURAL_KEYWORDS.some((k) => (material || "").toLowerCase().includes(k));
+  }
+
+  function tally(items, keyFn) {
+    const counts = {};
+    items.forEach((item) => {
+      const keys = keyFn(item);
+      (Array.isArray(keys) ? keys : [keys]).forEach((k) => {
+        if (!k) return;
+        counts[k] = (counts[k] || 0) + 1;
+      });
+    });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  }
+
+  function renderBars(container, data, max) {
+    if (!data.length) {
+      container.innerHTML = `<div class="empty-state">No data yet.</div>`;
+      return;
+    }
+    container.innerHTML = data
+      .map(
+        ([label, count]) => `
+        <div class="bar-row">
+          <span class="bar-label">${label}</span>
+          <div class="bar-track"><div class="bar-fill" style="width:${(count / max) * 100}%"></div></div>
+          <span class="bar-value">${count}</span>
+        </div>`
+      )
+      .join("");
+  }
+
+  document.getElementById("headline-stats").innerHTML = `<div class="empty-state">Loading…</div>`;
+
+  wardrobeReady.then(() => {
+    if (!WARDROBE.length) {
+      document.getElementById("headline-stats").innerHTML = `<div class="empty-state">No garments yet, add some in Closet Admin.</div>`;
+      return;
+    }
+
+    // headline stats
+    const naturalCount = WARDROBE.filter((g) => isNatural(g.material)).length;
+    const naturalPct = Math.round((naturalCount / WARDROBE.length) * 100);
+    const repairedCount = WARDROBE.filter((g) => g.repaired).length;
+    const mendsCount = REPAIRS.length;
+    const datedGarments = WARDROBE.filter((g) => g.dateAcquired);
+    const avgAgeYears = datedGarments.length
+      ? datedGarments.reduce((sum, g) => sum + (new Date() - new Date(g.dateAcquired)) / (365.25 * 24 * 3600 * 1000), 0) / datedGarments.length
+      : 0;
+    const brandCount = new Set(WARDROBE.map((g) => g.brand).filter(Boolean)).size;
+
+    const headline = [
+      { big: WARDROBE.length, label: "Garments Cataloged" },
+      { big: `${naturalPct}%`, label: "Natural Fiber" },
+      { big: repairedCount, label: "Garments Repaired" },
+      { big: mendsCount, label: "Visible Mends Logged" },
+      { big: datedGarments.length ? avgAgeYears.toFixed(1) + " yrs" : ",", label: "Average Garment Age" },
+      { big: brandCount, label: "Brands & Makers Owned" }
+    ];
+
+    document.getElementById("headline-stats").innerHTML = headline
+      .map((h) => `<div class="stat-card"><div class="big">${h.big}</div><div class="label">${h.label}</div></div>`)
+      .join("");
+
+    // bar charts
+    const colorTally = tally(WARDROBE, (g) => g.color);
+    renderBars(document.getElementById("bar-colors"), colorTally, colorTally.length ? colorTally[0][1] : 1);
+
+    const materialTally = tally(WARDROBE, (g) => (g.material || "").split("/")[0].split(",")[0].trim());
+    renderBars(document.getElementById("bar-materials"), materialTally, materialTally.length ? materialTally[0][1] : 1);
+
+    const uniformTally = tally(WARDROBE, (g) => g.uniforms);
+    renderBars(document.getElementById("bar-uniforms"), uniformTally, uniformTally.length ? uniformTally[0][1] : 1);
+
+    const seasonTally = tally(WARDROBE, (g) => g.season);
+    renderBars(document.getElementById("bar-seasons"), seasonTally, seasonTally.length ? seasonTally[0][1] : 1);
+
+    // most worn
+    const mostWorn = [...WARDROBE].sort((a, b) => b.timesWorn - a.timesWorn).slice(0, 5);
+    document.getElementById("most-worn").innerHTML = mostWorn
+      .map((g) => `<dt>${g.name}</dt><dd>${g.timesWorn} wears</dd>`)
+      .join("");
+
+    // best cost per wear
+    const bestCpw = [...WARDROBE]
+      .filter((g) => g.timesWorn > 0)
+      .sort((a, b) => a.cost / a.timesWorn - b.cost / b.timesWorn)
+      .slice(0, 5);
+    document.getElementById("best-cpw").innerHTML = bestCpw.length
+      ? bestCpw.map((g) => `<dt>${g.name}</dt><dd>${costPerWear(g)} / wear</dd>`).join("")
+      : `<div class="empty-state">No wear counts logged yet.</div>`;
+
+    // palette
+    const palette = document.getElementById("palette");
+    [...new Set(WARDROBE.map((g) => g.swatch))].forEach((hex) => {
+      const sw = document.createElement("div");
+      sw.title = hex;
+      sw.style.cssText = `width:36px;height:36px;border-radius:2px;background:${hex};border:1px solid var(--line)`;
+      palette.appendChild(sw);
+    });
+  });
+</script>
+</body>
+</html>

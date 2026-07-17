@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Wardrobe, A Field Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&family=Inter:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a href="index.html" class="brand"><span class="mark">IA / 01</span> My Wardrobe</a>
+    <button class="nav-toggle" aria-label="Toggle navigation">Menu</button>
+    <nav class="site-nav">
+      <a href="index.html" aria-current="page">Home</a>
+      <a href="wardrobe.html">Wardrobe</a>
+      <a href="uniforms.html">Uniforms</a>
+      <a href="outfits.html">Outfits</a>
+      <a href="constitution.html">Constitution</a>
+      <a href="wishlist.html">Wishlist</a>
+      <a href="repairs.html">Repairs</a>
+      <a href="statistics.html">Statistics</a>
+      <a href="field-notes.html">Field Notes</a>
+      <a href="about.html">About</a>
+      <a href="closet-admin.html">Admin</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <p class="eyebrow">Specimen No. 01, Est. ongoing</p>
+        <h1>My Wardrobe</h1>
+        <p class="lede">A collection built slowly through craftsmanship, repair, and intentional design. Click any piece on the figure to see its details.</p>
+        <div class="cta-row">
+          <a class="btn primary" href="wardrobe.html">Browse the Collection</a>
+          <a class="btn" href="outfits.html">Random Outfit</a>
+        </div>
+      </div>
+      <div class="motto">
+        Own less by choosing better.<br>
+        Wear often.<br>
+        Repair proudly.<br>
+        Buy with intention.
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Paper Doll</p>
+          <h2>Click a Piece</h2>
+        </div>
+      </div>
+
+      <div id="doll-wrap">
+        <div class="paper-doll-stage" id="doll-stage">
+          <div class="empty-state" id="doll-empty">Loading…</div>
+        </div>
+        <div class="doll-detail" id="doll-detail">
+          <p class="lede" style="font-size:0.9rem">Click a piece on the figure to see it here.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="tight">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Around the Site</p>
+          <h2>Start Exploring</h2>
+        </div>
+      </div>
+      <div class="uniform-grid">
+        <div class="uniform-card">
+          <h3>Wardrobe</h3>
+          <p class="lede" style="font-size:0.92rem">Every garment, cataloged like a specimen, searchable by color, material, season, and role.</p>
+          <a class="btn quiet" href="wardrobe.html">Browse &rarr;</a>
+        </div>
+        <div class="uniform-card">
+          <h3>Outfits</h3>
+          <p class="lede" style="font-size:0.92rem">A random generator for inspiration, and a running record of what actually worked.</p>
+          <a class="btn quiet" href="outfits.html">See Outfits &rarr;</a>
+        </div>
+        <div class="uniform-card">
+          <h3>Repairs</h3>
+          <p class="lede" style="font-size:0.92rem">A gallery of visible mending, proof that a repaired garment is not damaged, it's lived in.</p>
+          <a class="btn quiet" href="repairs.html">View Gallery &rarr;</a>
+        </div>
+        <div class="uniform-card">
+          <h3>Field Notes</h3>
+          <p class="lede" style="font-size:0.92rem">A running journal of what got worn, patched, and discovered, the story behind the inventory.</p>
+          <a class="btn quiet" href="field-notes.html">Read Notes &rarr;</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span>Indigo Americana Wardrobe Constitution &middot; Article XIV: Coherence, not perfection.</span>
+    <span>Built with HTML, CSS &amp; JS</span>
+  </div>
+</footer>
+
+<script src="js/data.js"></script>
+<script src="js/back4app-client.js"></script>
+<script src="js/wardrobe-loader.js"></script>
+<script src="js/app.js"></script>
+<script>
+  const stage = document.getElementById("doll-stage");
+  const emptyState = document.getElementById("doll-empty");
+  const detail = document.getElementById("doll-detail");
+
+  function showDetail(g) {
+    detail.innerHTML = `
+      <div class="tag-row">${g.tags.slice(0, 4).map((t) => `<span class="tag">${t}</span>`).join("")}</div>
+      <h3 style="margin-top:0.5em">${g.name}</h3>
+      <table class="spec-table" style="margin-top:0.6em">
+        <tr><td>Brand</td><td>${g.brand || "Unknown"}</td></tr>
+        <tr><td>Color</td><td>${g.color || "Unknown"}</td></tr>
+        <tr><td>Material</td><td>${g.material || "Unknown"}</td></tr>
+        <tr><td>Love Rating</td><td class="love-rating">${loveStars(g.loveRating)}</td></tr>
+      </table>
+      <a class="btn quiet" style="margin-top:0.8em" href="item.html?id=${g.id}">Full Details &rarr;</a>
+    `;
+  }
+
+  siteDataReady.then(() => {
+    if (!SITE_CONFIG || !SITE_CONFIG.characterImage) {
+      emptyState.innerHTML = `No character image yet. Upload one in Closet Admin &rarr; Paper Doll.`;
+      return;
+    }
+
+    stage.style.backgroundImage = `url(${SITE_CONFIG.characterImage.url})`;
+    emptyState.remove();
+
+    const dressed = WARDROBE.filter((g) => g.illustration && g.dollX != null && g.dollY != null);
+
+    if (!dressed.length) {
+      const note = document.createElement("div");
+      note.className = "empty-state";
+      note.style.position = "absolute";
+      note.style.bottom = "1em";
+      note.style.left = "1em";
+      note.style.right = "1em";
+      note.textContent = "No pieces placed yet. Add illustrations and positions in Closet Admin \u2192 Paper Doll.";
+      stage.appendChild(note);
+    }
+
+    dressed
+      .sort((a, b) => a.dollZ - b.dollZ)
+      .forEach((g) => {
+        const img = document.createElement("img");
+        img.src = g.illustration.url;
+        img.alt = g.name;
+        img.className = "doll-piece";
+        img.style.left = g.dollX + "%";
+        img.style.top = g.dollY + "%";
+        img.style.width = g.dollWidth + "%";
+        img.style.zIndex = g.dollZ;
+        img.addEventListener("click", () => {
+          document.querySelectorAll(".doll-piece").forEach((p) => p.classList.remove("active"));
+          img.classList.add("active");
+          showDetail(g);
+        });
+        stage.appendChild(img);
+      });
+  });
+</script>
+</body>
+</html>

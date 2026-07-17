@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Closet Admin, My Wardrobe</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&family=Inter:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a href="index.html" class="brand"><span class="mark">IA / OWNER</span> My Wardrobe</a>
+    <button class="nav-toggle" aria-label="Toggle navigation">Menu</button>
+    <nav class="site-nav">
+      <a href="index.html">Home</a>
+      <a href="wardrobe.html">Wardrobe</a>
+      <a href="uniforms.html">Uniforms</a>
+      <a href="outfits.html">Outfits</a>
+      <a href="constitution.html">Constitution</a>
+      <a href="wishlist.html">Wishlist</a>
+      <a href="repairs.html">Repairs</a>
+      <a href="statistics.html">Statistics</a>
+      <a href="field-notes.html">Field Notes</a>
+      <a href="about.html">About</a>
+      <a href="closet-admin.html">Admin</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <!-- ===================== LOGIN VIEW ===================== -->
+  <section class="tight" id="view-login">
+    <div class="wrap">
+      <div class="login-shell">
+        <p class="eyebrow">Owner Only</p>
+        <h1 style="font-size:1.6rem">Closet Admin</h1>
+        <p class="lede" style="font-size:0.9rem">Log in to add a garment, take a photo and fill in its details, straight to your closet's Back4App app.</p>
+
+        <form id="login-form" style="margin-top:var(--space-3)">
+          <div class="field-group">
+            <label for="login-username">Username</label>
+            <input type="text" id="login-username" autocomplete="username" required>
+          </div>
+          <div class="field-group">
+            <label for="login-password">Password</label>
+            <input type="password" id="login-password" autocomplete="current-password" required>
+          </div>
+          <button type="submit" class="btn primary" id="login-submit" style="width:100%; justify-content:center">Log In</button>
+          <p class="form-error" id="login-error"></p>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== ADMIN VIEW ===================== -->
+  <section class="tight" id="view-admin" style="display:none">
+    <div class="wrap">
+      <div class="admin-header">
+        <div>
+          <p class="eyebrow">Closet Admin</p>
+          <h1 id="admin-title">Manage Wardrobe</h1>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.8em">
+          <span class="owner-chip" id="owner-chip"></span>
+          <button class="btn quiet" id="logout-btn">Log Out</button>
+        </div>
+      </div>
+
+      <div class="admin-tabs">
+        <button class="admin-tab active" id="tab-manage" type="button">Manage Wardrobe</button>
+        <button class="admin-tab" id="tab-repairs" type="button">Repairs</button>
+        <button class="admin-tab" id="tab-wishlist" type="button">Wishlist</button>
+        <button class="admin-tab" id="tab-doll" type="button">Paper Doll</button>
+        <button class="admin-tab" id="tab-add" type="button">Add via Photo</button>
+      </div>
+
+      <!-- ---------- MANAGE TAB ---------- -->
+      <div id="pane-manage">
+        <p class="lede" style="font-size:0.9rem; margin-top:1em">
+          This is your full closet inventory, live from Back4App. Click any cell to edit it ,
+          changes save automatically. Click a photo cell to snap one with your camera or pick a
+          file from your computer.
+        </p>
+
+        <div class="manage-toolbar">
+          <div style="display:flex; gap:0.6rem; flex-wrap:wrap; flex:1">
+            <input type="text" id="m-search" placeholder="search name, brand, color, material…" style="font-family:var(--font-body); font-size:0.85rem; padding:0.6em 0.8em; border:1px solid var(--line); background:var(--paper); color:var(--ink); border-radius:2px; flex:1 1 220px;">
+            <select id="m-category" style="font-family:var(--font-body); font-size:0.85rem; padding:0.6em 0.8em; border:1px solid var(--line); background:var(--paper); color:var(--ink); border-radius:2px;">
+              <option value="">All categories</option>
+              <option value="top">Top</option>
+              <option value="bottom">Bottom</option>
+              <option value="outer">Outer Layer</option>
+              <option value="shoe">Shoes</option>
+              <option value="accessory">Accessory</option>
+              <option value="dress">Dress</option>
+            </select>
+          </div>
+          <div class="segmented" id="m-segment">
+            <button data-set="active" class="active" type="button">Active Wardrobe</button>
+            <button data-set="retired" type="button">Letting Go</button>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.6em; flex-wrap:wrap; gap:0.6em">
+          <span class="manage-count" id="m-count"></span>
+          <div style="display:flex; gap:0.6em; flex-wrap:wrap">
+            <button class="btn quiet" id="m-import-seed" type="button">Import CSV Data (one-time)</button>
+            <button class="btn quiet" id="m-add-new" type="button">+ Add Item</button>
+          </div>
+        </div>
+
+        <div id="m-status" class="state-msg" style="font-family:var(--font-mono); font-size:0.8rem; color:var(--ink-soft)"></div>
+
+        <div id="m-edit-slot"></div>
+
+        <div style="overflow-x:auto">
+          <table class="grid-table" id="m-grid">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Brand</th>
+                <th>Color</th>
+                <th>Material</th>
+                <th>Size</th>
+                <th>Love</th>
+                <th>Keep</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="m-grid-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+
+      <!-- ---------- REPAIRS TAB ---------- -->
+      <div id="pane-repairs" style="display:none">
+        <p class="lede" style="font-size:0.9rem; margin-top:1em">Repair log entries, linked to a garment. Live in Back4App, edited here.</p>
+        <button class="btn quiet" id="r-add-new" type="button" style="margin-bottom:1em">+ Add Repair</button>
+        <div id="r-edit-slot"></div>
+        <div class="manage-list" id="r-list"></div>
+      </div>
+
+      <!-- ---------- WISHLIST TAB ---------- -->
+      <div id="pane-wishlist" style="display:none">
+        <p class="lede" style="font-size:0.9rem; margin-top:1em">Eventual replacements only, not a shopping list. Live in Back4App, edited here.</p>
+        <button class="btn quiet" id="w-add-new" type="button" style="margin-bottom:1em">+ Add Wishlist Item</button>
+        <div id="w-edit-slot"></div>
+        <div class="manage-list" id="w-list"></div>
+      </div>
+
+      <!-- ---------- PAPER DOLL TAB ---------- -->
+      <div id="pane-doll" style="display:none">
+        <p class="lede" style="font-size:0.9rem; margin-top:1em">
+          Upload a character image once, then give each garment an illustration and drag it into
+          place. What you see here is exactly what shows on the home page.
+        </p>
+
+        <div class="field-group" style="max-width:420px">
+          <label>Character Image</label>
+          <div class="dropzone" id="doll-char-dropzone">
+            <span class="dropzone-label">tap to take a photo, or drop one here</span>
+            <input type="file" id="doll-char-input" accept="image/*" capture="environment">
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: minmax(260px, 420px) 1fr; gap:var(--space-3); margin-top:1.5em; align-items:start">
+          <div class="paper-doll-stage" id="admin-doll-stage">
+            <div class="empty-state" id="admin-doll-empty">No character image yet.</div>
+          </div>
+          <div>
+            <p class="manage-count" id="doll-piece-count"></p>
+            <div class="manage-list" id="doll-piece-list"></div>
+          </div>
+        </div>
+      </div>
+
+
+      <div id="pane-add" style="display:none">
+      <p class="lede" style="font-size:0.9rem; margin-top:1em">Snap or upload a photo of a new garment and fill in its details in one go, saves straight to Back4App, same place the grid reads from.</p>
+      <form id="garment-form" style="margin-top:var(--space-3)">
+        <div class="field-group">
+          <label>Photo</label>
+          <div class="dropzone" id="dropzone">
+            <span class="dropzone-label">tap to take a photo, or drop one here</span>
+            <input type="file" id="file-input" accept="image/*" capture="environment">
+          </div>
+          <img id="photo-preview" class="photo-preview" alt="Selected photo preview">
+        </div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label for="f-name">Name</label>
+            <input type="text" id="f-name" placeholder="Barn Jacket" required>
+          </div>
+          <div class="field-group">
+            <label for="f-category">Category</label>
+            <select id="f-category">
+              <option value="top">Top</option>
+              <option value="bottom">Bottom</option>
+              <option value="outer">Outer Layer</option>
+              <option value="shoe">Shoes</option>
+              <option value="accessory">Accessory</option>
+              <option value="dress">Dress</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label for="f-brand">Brand</label>
+            <input type="text" id="f-brand" placeholder="Carhartt">
+          </div>
+          <div class="field-group">
+            <label for="f-color">Color</label>
+            <input type="text" id="f-color" placeholder="Rust">
+          </div>
+          <div class="field-group">
+            <label for="f-material">Material</label>
+            <input type="text" id="f-material" placeholder="Canvas">
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label for="f-date">Date Acquired</label>
+            <input type="date" id="f-date">
+          </div>
+          <div class="field-group">
+            <label for="f-where">Where Purchased</label>
+            <input type="text" id="f-where" placeholder="Workwear supply store">
+          </div>
+          <div class="field-group">
+            <label for="f-cost">Cost ($)</label>
+            <input type="number" id="f-cost" min="0" step="0.01" placeholder="140">
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label for="f-madein">Made In</label>
+            <input type="text" id="f-madein" placeholder="USA">
+          </div>
+          <div class="field-group">
+            <label for="f-role">Role</label>
+            <select id="f-role">
+              <option>Everyday Hero</option>
+              <option>Supporting Basic</option>
+              <option>Character Piece</option>
+              <option>Work Essential</option>
+              <option>Field Essential</option>
+              <option>Home Comfort</option>
+              <option>Seasonal Favorite</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label for="f-love">Love Rating (1 to 5)</label>
+            <input type="number" id="f-love" min="1" max="5" value="4">
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label for="f-tier">Quality Tier</label>
+            <select id="f-tier">
+              <option value="">Unrated</option>
+              <option>Low</option>
+              <option>High</option>
+              <option>Very</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label for="f-wash">Wash Care</label>
+            <select id="f-wash">
+              <option value="">Unspecified</option>
+              <option>Cold Wash</option>
+              <option>Warm Wash</option>
+              <option>Hand Wash</option>
+              <option>Dry Clean Only</option>
+              <option>Do Not Wash</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label for="f-dry">Dry Care</label>
+            <select id="f-dry">
+              <option value="">Unspecified</option>
+              <option>Air Dry</option>
+              <option>Machine Dry Low</option>
+              <option>Flat Dry</option>
+              <option>Do Not Dry</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label>Uniforms</label>
+          <div class="checkbox-set" id="f-uniforms"></div>
+        </div>
+
+        <div class="field-group">
+          <label>Season</label>
+          <div class="checkbox-set" id="f-season"></div>
+        </div>
+
+        <div class="field-group">
+          <label for="f-tags">Tags (comma separated)</label>
+          <input type="text" id="f-tags" placeholder="Workwear, Core Piece, Indigo Americana">
+        </div>
+
+        <div class="field-group">
+          <label for="f-notes">Notes</label>
+          <textarea id="f-notes" placeholder="Anything worth remembering about this piece."></textarea>
+        </div>
+
+        <div class="field-group">
+          <label for="f-mending">Visible Mending Ideas</label>
+          <textarea id="f-mending" placeholder="Where and how you'd repair it when the time comes."></textarea>
+        </div>
+
+        <button type="submit" class="btn primary" id="save-submit">Save Garment</button>
+        <p class="form-error" id="save-error"></p>
+      </form>
+
+      <div class="divider"></div>
+
+      <h2 style="font-size:1.2rem">Recently Uploaded</h2>
+      <div class="uploaded-grid" id="uploaded-grid"></div>
+      </div>
+      <!-- /pane-add -->
+
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span>Article IX, Buying: does it strengthen Indigo Americana?</span>
+    <span>&larr; <a href="index.html" style="text-decoration:none">Back home</a></span>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/data.js"></script>
+<script src="js/back4app-client.js"></script>
+<script src="js/wardrobe-seed-data.js"></script>
+<script src="js/app.js"></script>
+<script src="js/closet-admin.js"></script>
+<script src="js/closet-grid.js"></script>
+<script src="js/closet-extras.js"></script>
+</body>
+</html>

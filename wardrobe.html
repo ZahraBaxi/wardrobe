@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wardrobe, My Wardrobe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&family=Inter:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a href="index.html" class="brand"><span class="mark">IA / 02</span> My Wardrobe</a>
+    <button class="nav-toggle" aria-label="Toggle navigation">Menu</button>
+    <nav class="site-nav">
+      <a href="index.html">Home</a>
+      <a href="wardrobe.html" aria-current="page">Wardrobe</a>
+      <a href="uniforms.html">Uniforms</a>
+      <a href="outfits.html">Outfits</a>
+      <a href="constitution.html">Constitution</a>
+      <a href="wishlist.html">Wishlist</a>
+      <a href="repairs.html">Repairs</a>
+      <a href="statistics.html">Statistics</a>
+      <a href="field-notes.html">Field Notes</a>
+      <a href="about.html">About</a>
+      <a href="closet-admin.html">Admin</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="tight">
+    <div class="wrap">
+      <p class="eyebrow">Catalog</p>
+      <h1>The Wardrobe</h1>
+      <p class="lede">Every garment currently in the collection, cataloged like a specimen.</p>
+
+      <div class="filter-bar" style="margin-top:var(--space-3)">
+        <input type="text" id="search-input" placeholder="Search by name, color, material, brand…">
+        <select id="category-select">
+          <option value="">All Categories</option>
+          <option value="top">Top</option>
+          <option value="bottom">Bottom</option>
+          <option value="outer">Outer Layer</option>
+          <option value="shoe">Shoes</option>
+          <option value="accessory">Accessory</option>
+        </select>
+        <select id="uniform-select">
+          <option value="">All Uniforms</option>
+          <option>Everyday Casual</option>
+          <option>Weekend</option>
+          <option>Work</option>
+          <option>Field</option>
+          <option>Party</option>
+          <option>Home</option>
+        </select>
+        <select id="season-select">
+          <option value="">All Seasons</option>
+          <option>Spring</option>
+          <option>Summer</option>
+          <option>Fall</option>
+          <option>Winter</option>
+          <option>All Season</option>
+        </select>
+      </div>
+      <div class="filter-bar" id="tag-pills"></div>
+      <p class="result-count" id="result-count"></p>
+      <div class="garment-grid" id="grid"></div>
+      <div class="empty-state" id="empty-state" style="display:none">No garments match those filters. Try clearing one.</div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span>Article III: Avoid buying garments that feel disposable.</span>
+    <span>&larr; <a href="index.html" style="text-decoration:none">Back home</a></span>
+  </div>
+</footer>
+
+<script src="js/data.js"></script>
+<script src="js/back4app-client.js"></script>
+<script src="js/wardrobe-loader.js"></script>
+<script src="js/app.js"></script>
+<script>
+  const grid = document.getElementById("grid");
+  const emptyState = document.getElementById("empty-state");
+  const resultCount = document.getElementById("result-count");
+  const searchInput = document.getElementById("search-input");
+  const categorySelect = document.getElementById("category-select");
+  const uniformSelect = document.getElementById("uniform-select");
+  const seasonSelect = document.getElementById("season-select");
+  const tagPillsEl = document.getElementById("tag-pills");
+  let activeTags = new Set();
+
+  resultCount.textContent = "Loading your wardrobe…";
+
+  function render() {
+    const q = searchInput.value.trim().toLowerCase();
+    const cat = categorySelect.value;
+    const uni = uniformSelect.value;
+    const season = seasonSelect.value;
+
+    const results = WARDROBE.filter((g) => {
+      const haystack = `${g.name} ${g.color} ${g.material} ${g.brand} ${g.madeIn}`.toLowerCase();
+      if (q && !haystack.includes(q)) return false;
+      if (cat && g.category !== cat) return false;
+      if (uni && !g.uniforms.includes(uni)) return false;
+      if (season && !g.season.includes(season)) return false;
+      if (activeTags.size && ![...activeTags].every((t) => g.tags.includes(t))) return false;
+      return true;
+    });
+
+    grid.innerHTML = "";
+    results.forEach((g) => grid.appendChild(garmentTile(g)));
+    resultCount.textContent = `${results.length} of ${WARDROBE.length} garments`;
+    emptyState.style.display = results.length ? "none" : "block";
+  }
+
+  wardrobeReady.then(() => {
+    const allTags = [...new Set(WARDROBE.flatMap((g) => g.tags))].sort();
+
+    allTags.forEach((tag) => {
+      const btn = document.createElement("button");
+      btn.className = "pill-toggle";
+      btn.textContent = tag;
+      btn.addEventListener("click", () => {
+        if (activeTags.has(tag)) { activeTags.delete(tag); btn.classList.remove("active"); }
+        else { activeTags.add(tag); btn.classList.add("active"); }
+        render();
+      });
+      tagPillsEl.appendChild(btn);
+    });
+
+    [searchInput, categorySelect, uniformSelect, seasonSelect].forEach((el) =>
+      el.addEventListener("input", render)
+    );
+    render();
+  });
+</script>
+</body>
+</html>
