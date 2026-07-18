@@ -99,8 +99,11 @@
     { key: "bottom", label: "Bottom", category: "bottom" },
     { key: "dress", label: "Dress (instead of top/bottom)", category: "dress" },
     { key: "shoe", label: "Shoes", category: "shoe" },
-    { key: "accessory", label: "Accessory", category: "accessory" }
+    { key: "jewelry", label: "Jewelry", category: "jewelry" },
+    { key: "hat", label: "Hat", category: "hat" },
+    { key: "bag", label: "Bag", category: "bag" }
   ];
+  const ACCESSORY_CLUSTER = { key: "accessory", label: "Additional Accessories (pick any that apply, e.g. hairpins, bandana)", category: "accessory" };
 
   function refresh() {
     currentOutfit = generateOutfit();
@@ -121,6 +124,14 @@
   // opens the shared build/edit form.
   // existingOutfit: an Outfit record to edit, or null to create a new one
   // prefillGarmentIds: garment ids to preselect when creating fresh from the randomizer
+  function accessoryClusterMarkup(preselected) {
+    const items = WARDROBE.filter((g) => g.category === ACCESSORY_CLUSTER.category);
+    if (!items.length) return `<p class="lede" style="font-size:0.82rem">No additional accessories cataloged yet.</p>`;
+    return items
+      .map((g) => `<label><input type="checkbox" name="of-accessory-cluster" value="${g.id}"${preselected.includes(g.id) ? " checked" : ""}> ${g.name}</label>`)
+      .join("");
+  }
+
   function openOutfitForm(existingOutfit, prefillGarmentIds) {
     const slot = document.getElementById("outfit-form-slot");
     const preselected = existingOutfit ? existingOutfit.garmentIds : (prefillGarmentIds || []);
@@ -143,6 +154,10 @@
         </div>
         <p class="lede" style="font-size:0.85rem; margin-bottom:0.6em">Pick a piece for each slot that applies. Leave any as "None" if it doesn't fit.</p>
         <div class="field-row">${slotFields}</div>
+        <div class="field-group">
+          <label>${ACCESSORY_CLUSTER.label}</label>
+          <div class="checkbox-set">${accessoryClusterMarkup(preselected)}</div>
+        </div>
         <div class="field-group"><label for="of-notes">Notes</label><textarea id="of-notes" placeholder="why it works, when to reach for it">${existingOutfit ? escHtmlOF(existingOutfit.notes) : ""}</textarea></div>
         <div style="display:flex; gap:0.6em">
           <button type="button" class="btn primary" id="of-save">${existingOutfit ? "Save Changes" : "Save Outfit"}</button>
@@ -166,6 +181,8 @@
     const occasion = document.getElementById("of-occasion").value.trim();
     const notes = document.getElementById("of-notes").value.trim();
     const garmentIds = SLOTS.map((s) => document.getElementById(`of-slot-${s.key}`).value).filter(Boolean);
+    const clusterIds = Array.from(document.querySelectorAll('input[name="of-accessory-cluster"]:checked')).map((el) => el.value);
+    garmentIds.push(...clusterIds);
 
     if (!garmentIds.length) { alert("pick at least one piece"); return; }
 
@@ -240,7 +257,10 @@
 
     document.getElementById("love-btn").addEventListener("click", () => {
       if (!currentOutfit) return;
-      const garmentIds = Object.values(currentOutfit).filter(Boolean).map((g) => g.id);
+      const singles = ["top", "outer", "bottom", "dress", "shoe", "jewelry", "hat", "bag"]
+        .map((key) => currentOutfit[key])
+        .filter(Boolean);
+      const garmentIds = [...singles, ...(currentOutfit.extras || [])].map((g) => g.id);
       if (!garmentIds.length) return;
       openOutfitForm(null, garmentIds);
     });

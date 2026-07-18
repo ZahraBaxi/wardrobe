@@ -274,8 +274,19 @@
     { key: "bottom", label: "Bottom", category: "bottom", allowNone: true },
     { key: "dress", label: "Dress (instead of top/bottom)", category: "dress", allowNone: true },
     { key: "shoe", label: "Shoes", category: "shoe", allowNone: true },
-    { key: "accessory", label: "Accessory", category: "accessory", allowNone: true }
+    { key: "jewelry", label: "Jewelry", category: "jewelry", allowNone: true },
+    { key: "hat", label: "Hat", category: "hat", allowNone: true },
+    { key: "bag", label: "Bag", category: "bag", allowNone: true }
   ];
+  const ACCESSORY_CLUSTER = { key: "accessory", label: "Additional Accessories (pick any that apply, e.g. hairpins, bandana)", category: "accessory" };
+
+  function accessoryClusterMarkup(preselected) {
+    const items = WARDROBE.filter((g) => g.category === ACCESSORY_CLUSTER.category);
+    if (!items.length) return `<p class="lede" style="font-size:0.82rem">No additional accessories cataloged yet.</p>`;
+    return items
+      .map((g) => `<label><input type="checkbox" name="cal-accessory-cluster" value="${g.id}"${preselected.includes(g.id) ? " checked" : ""}> ${g.name}</label>`)
+      .join("");
+  }
 
   function slotOptionsMarkup(slotKey, category, editing) {
     const items = WARDROBE.filter((g) => g.category === category);
@@ -314,6 +325,10 @@
         <div id="cal-scratch-group">
           <p class="lede" style="font-size:0.85rem; margin-bottom:0.6em">Pick a piece for each slot that applies. Leave any as "None" if it doesn't fit today's outfit.</p>
           <div class="field-row">${slotFields}</div>
+          <div class="field-group">
+            <label>${ACCESSORY_CLUSTER.label}</label>
+            <div class="checkbox-set">${accessoryClusterMarkup(editing ? editing.garmentIds : [])}</div>
+          </div>
         </div>
         <div class="field-group"><label for="cal-notes">Notes</label><textarea id="cal-notes" placeholder="occasion, weather, how it felt">${editing ? editing.notes || "" : ""}</textarea></div>
         <div id="cal-fav-group">
@@ -378,6 +393,8 @@
       garmentIds = SLOTS
         .map((s) => document.getElementById(`cal-slot-${s.key}`).value)
         .filter(Boolean);
+      const clusterIds = Array.from(document.querySelectorAll('input[name="cal-accessory-cluster"]:checked')).map((el) => el.value);
+      garmentIds.push(...clusterIds);
     }
 
     if (!garmentIds.length) { alert("pick at least one piece, or a saved outfit"); return; }

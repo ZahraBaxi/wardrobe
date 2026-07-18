@@ -48,15 +48,23 @@ function generateOutfit() {
   const bottoms = WARDROBE.filter((g) => g.category === "bottom");
   const outers = WARDROBE.filter((g) => g.category === "outer");
   const shoes = WARDROBE.filter((g) => g.category === "shoe");
-  const accessories = WARDROBE.filter((g) => g.category === "accessory");
+  const jewelry = WARDROBE.filter((g) => g.category === "jewelry");
+  const hats = WARDROBE.filter((g) => g.category === "hat");
+  const bags = WARDROBE.filter((g) => g.category === "bag");
+  const extras = WARDROBE.filter((g) => g.category === "accessory");
 
   const top = pickRandom(tops);
   const bottom = pickRandom(bottoms);
   const outer = Math.random() > 0.35 ? pickRandom(outers) : null;
   const shoe = pickRandom(shoes);
-  const accessory = Math.random() > 0.5 ? pickRandom(accessories) : null;
+  const jewelryPick = Math.random() > 0.5 ? pickRandom(jewelry) : null;
+  const hat = Math.random() > 0.6 ? pickRandom(hats) : null;
+  const bag = Math.random() > 0.5 ? pickRandom(bags) : null;
+  // additional accessories often get worn a couple at a time, e.g. a bandana plus hairpins
+  const extraCount = extras.length ? Math.floor(Math.random() * Math.min(3, extras.length + 1)) : 0;
+  const extraPicks = [...extras].sort(() => Math.random() - 0.5).slice(0, extraCount);
 
-  return { top, bottom, outer, shoe, accessory };
+  return { top, bottom, outer, shoe, jewelry: jewelryPick, hat, bag, extras: extraPicks };
 }
 
 function slotMarkup(label, garment) {
@@ -65,7 +73,7 @@ function slotMarkup(label, garment) {
       <div class="slot">
         <span class="slot-label">${label}</span>
         <div class="swatch" style="background:transparent; border-style:dashed;"></div>
-        <div class="slot-name" style="color:var(--ink-soft)">, none ,</div>
+        <div class="slot-name" style="color:var(--ink-soft)">none</div>
       </div>
     `;
   }
@@ -81,24 +89,49 @@ function slotMarkup(label, garment) {
   `;
 }
 
+function multiSlotMarkup(label, garments) {
+  if (!garments || !garments.length) {
+    return `
+      <div class="slot">
+        <span class="slot-label">${label}</span>
+        <div class="swatch" style="background:transparent; border-style:dashed;"></div>
+        <div class="slot-name" style="color:var(--ink-soft)">none</div>
+      </div>
+    `;
+  }
+  return `
+    <div class="slot">
+      <span class="slot-label">${label}</span>
+      <div class="swatch" style="background:${garments[0].swatch}"></div>
+      <div>
+        <div class="slot-name">${garments.map((g) => g.name).join(", ")}</div>
+        <div class="slot-meta">${garments.length} piece${garments.length === 1 ? "" : "s"}</div>
+      </div>
+    </div>
+  `;
+}
+
 function renderOutfit(container, outfit) {
   container.innerHTML =
     slotMarkup("Top", outfit.top) +
     slotMarkup("Outer Layer", outfit.outer) +
     slotMarkup("Bottom", outfit.bottom) +
     slotMarkup("Shoes", outfit.shoe) +
-    slotMarkup("Accessory", outfit.accessory);
+    slotMarkup("Jewelry", outfit.jewelry) +
+    slotMarkup("Hat", outfit.hat) +
+    slotMarkup("Bag", outfit.bag) +
+    multiSlotMarkup("Additional Accessories", outfit.extras);
 }
 
 // ---- format helpers ----
 function formatDate(iso) {
-  if (!iso) return ",";
+  if (!iso) return "not set";
   const d = new Date(iso + "T00:00:00");
   return d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 }
 
 function costPerWear(g) {
-  if (!g.timesWorn) return ",";
+  if (!g.timesWorn) return "not worn yet";
   return `$${(g.cost / g.timesWorn).toFixed(2)}`;
 }
 

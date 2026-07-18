@@ -13,7 +13,7 @@ var gridRows = []; // normalized garments currently loaded (both active + retire
 var gridSet = 'active';
 var expandedId = null;
 
-var CATEGORY_OPTIONS_G = ['top', 'bottom', 'outer', 'shoe', 'accessory', 'dress'];
+var CATEGORY_OPTIONS_G = ['top', 'bottom', 'outer', 'shoe', 'dress', 'jewelry', 'hat', 'bag', 'accessory'];
 var UNIFORM_OPTIONS_G = ['Everyday Casual', 'Weekend', 'Work', 'Field', 'Party', 'Home'];
 var SEASON_OPTIONS_G = ['Spring', 'Summer', 'Fall', 'Winter', 'All Season'];
 var ROLE_OPTIONS_G = ['Everyday Hero', 'Supporting Basic', 'Character Piece', 'Work Essential', 'Field Essential', 'Home Comfort', 'Seasonal Favorite'];
@@ -67,7 +67,7 @@ async function reloadGrid() {
   refreshDatalists();
 }
 
-var GRID_CATEGORY_ORDER = ['top', 'outer', 'dress', 'bottom', 'shoe', 'accessory'];
+var GRID_CATEGORY_ORDER = ['top', 'outer', 'dress', 'bottom', 'shoe', 'jewelry', 'hat', 'bag', 'accessory'];
 
 function byCategoryThenNameG(a, b) {
   var ca = GRID_CATEGORY_ORDER.indexOf(a.category);

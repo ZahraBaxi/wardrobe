@@ -45,8 +45,12 @@
           <option value="top">Top</option>
           <option value="bottom">Bottom</option>
           <option value="outer">Outer Layer</option>
+          <option value="dress">Dress</option>
           <option value="shoe">Shoes</option>
-          <option value="accessory">Accessory</option>
+          <option value="jewelry">Jewelry</option>
+          <option value="hat">Hats</option>
+          <option value="bag">Bags</option>
+          <option value="accessory">Additional Accessories</option>
         </select>
         <select id="uniform-select">
           <option value="">All Uniforms</option>
@@ -98,7 +102,7 @@
 
   resultCount.textContent = "Loading your wardrobe…";
 
-  const CATEGORY_ORDER = ["top", "outer", "dress", "bottom", "shoe", "accessory"];
+  const CATEGORY_ORDER = ["top", "outer", "dress", "bottom", "shoe", "jewelry", "hat", "bag", "accessory"];
   function byCategoryThenName(a, b) {
     const ca = CATEGORY_ORDER.indexOf(a.category);
     const cb = CATEGORY_ORDER.indexOf(b.category);
