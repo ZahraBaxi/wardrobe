@@ -115,9 +115,13 @@
           <span class="manage-count" id="m-count"></span>
           <div style="display:flex; gap:0.6em; flex-wrap:wrap">
             <button class="btn quiet" id="m-import-seed" type="button">Import CSV Data (one-time)</button>
+            <button class="btn quiet" id="m-upload-csv-btn" type="button">Upload a CSV to Add Items</button>
+            <input type="file" id="m-upload-csv-input" accept=".csv,text/csv" style="display:none">
             <button class="btn quiet" id="m-add-new" type="button">+ Add Item</button>
           </div>
         </div>
+
+        <p class="lede" id="m-csv-status" style="font-size:0.82rem; margin-bottom:0.6em"></p>
 
         <div id="m-status" class="state-msg" style="font-family:var(--font-mono); font-size:0.8rem; color:var(--ink-soft)"></div>
 

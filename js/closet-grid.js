@@ -39,6 +39,13 @@ async function initGrid() {
   document.querySelector('#m-category').addEventListener('change', renderGrid);
   document.querySelector('#m-add-new').addEventListener('click', addNewRow);
   document.querySelector('#m-import-seed').addEventListener('click', importSeedData);
+  document.querySelector('#m-upload-csv-btn').addEventListener('click', function () {
+    document.querySelector('#m-upload-csv-input').click();
+  });
+  document.querySelector('#m-upload-csv-input').addEventListener('change', function (e) {
+    if (e.target.files.length) handleCsvUpload(e.target.files[0]);
+    e.target.value = '';
+  });
 
   document.querySelectorAll('#m-segment button').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -582,6 +589,147 @@ async function importSeedData() {
   btn.disabled = false;
   setStatus('imported ' + done + ' items.');
   showToast('import complete');
+  await reloadGrid();
+}
+
+/* ---------------- upload your own CSV ---------------- */
+// Purely additive: every row becomes a brand new Garment record. Nothing
+// existing is ever touched, deleted, or overwritten, this only creates.
+
+function parseCsvText(text) {
+  var rows = [];
+  var row = [];
+  var field = '';
+  var inQuotes = false;
+  text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+  for (var i = 0; i < text.length; i++) {
+    var c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; }
+        else { inQuotes = false; }
+      } else {
+        field += c;
+      }
+    } else if (c === '"') {
+      inQuotes = true;
+    } else if (c === ',') {
+      row.push(field);
+      field = '';
+    } else if (c === '\n') {
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = '';
+    } else {
+      field += c;
+    }
+  }
+  if (field.length || row.length) { row.push(field); rows.push(row); }
+
+  if (!rows.length) return [];
+  var headers = rows[0].map(function (h) { return h.trim().toLowerCase(); });
+  return rows.slice(1)
+    .filter(function (r) { return r.some(function (cell) { return cell.trim() !== ''; }); })
+    .map(function (r) {
+      var obj = {};
+      headers.forEach(function (h, idx) { obj[h] = (r[idx] || '').trim(); });
+      return obj;
+    });
+}
+
+var COLOR_HEX_G = {
+  'beige': '#D9C9A8', 'black': '#1C1B19', 'blue': '#3E6D9C', 'brown grey': '#7A6E63',
+  'burgandy': '#6E2A34', 'burgundy': '#6E2A34', 'chocolate brown': '#4B2E1E',
+  'dark denim blue': '#2B4257', 'dark indigo blue': '#26344A', 'dark teal': '#1F4B4A',
+  'dust blue': '#7C93A6', 'dusty pink': '#C9A79A', 'forest green': '#33482F',
+  'grey': '#8A8783', 'gray': '#8A8783', 'light blue': '#A9C4D8', 'light denim blue': '#6C8FA8',
+  'light brown': '#9C7C5C', 'medium blue denim': '#4C6E8C', 'plum': '#5B3A4E',
+  'mustard yellow': '#C9A227', 'navy blue': '#233350', 'olive green': '#5E6B3E',
+  'persimmon': '#D9622B', 'pink': '#D999AB', 'purple': '#5B4B7A', 'red': '#A3332B',
+  'rust brown': '#8A4B2E', 'rust orange': '#B0562C', 'tan': '#C6A879', 'teal': '#2E6E6A',
+  'white': '#EDEAE2', 'green': '#4B6B3E', 'mint': '#A9CBB7', 'gold': '#C9A227',
+  'silver': '#A8A8A8', 'cream': '#E8DFC8', 'brown': '#5C4433', 'orange': '#C9642A',
+  'yellow': '#D6B430', 'navy': '#233350', 'denim': '#4C6E8C'
+};
+
+function guessSwatchG(colorText) {
+  if (!colorText) return '#9C9689';
+  var first = colorText.split(',')[0].trim();
+  var key = first.toLowerCase().replace(/\s*base tone\s*/i, '').replace(/\s*base\s*$/i, '').trim();
+  if (COLOR_HEX_G[key]) return COLOR_HEX_G[key];
+  for (var k in COLOR_HEX_G) {
+    if (key.indexOf(k) !== -1) return COLOR_HEX_G[k];
+  }
+  return '#9C9689';
+}
+
+function csvRowToGarment(row) {
+  var name = row['item'] || row['name'] || '';
+  if (!name) return null;
+  var loveRaw = row['love (1-5)'] || row['love'] || '';
+  var love = parseInt(loveRaw, 10);
+  var colorText = row['color'] || '';
+  return {
+    name: name,
+    category: (row['catagory'] || row['category'] || 'top').toLowerCase(),
+    layerType: null,
+    brand: row['brand'] || '',
+    color: colorText,
+    swatch: guessSwatchG(colorText),
+    material: row['material'] || '',
+    dateAcquired: '',
+    wherePurchased: '',
+    cost: 0,
+    madeIn: row['made in'] || row['madein'] || '',
+    loveRating: isNaN(love) ? 3 : love,
+    timesWorn: 0,
+    wornInLastYear: false,
+    role: '',
+    uniforms: [],
+    season: [],
+    notes: '',
+    mendingIdeas: '',
+    tags: [],
+    repaired: false,
+    size: row['size'] || '',
+    link: row['link'] || '',
+    care: { wash: row['wash'] || '', dry: row['dry'] || '' },
+    highendTier: row['highend?'] || row['highend'] || row['tier'] || '',
+    keep: (row['keep?'] || row['keep'] || 'yes').toLowerCase() !== 'no'
+  };
+}
+
+async function handleCsvUpload(file) {
+  var status = document.querySelector('#m-csv-status');
+  var text = await file.text();
+  var rows = parseCsvText(text);
+  var garments = rows.map(csvRowToGarment).filter(Boolean);
+
+  if (!garments.length) {
+    status.textContent = 'no usable rows found, check that the first row has headers like "item", "catagory", "color".';
+    return;
+  }
+
+  if (!window.confirm('Add ' + garments.length + ' new item(s) from this CSV? This only adds, nothing already in your wardrobe will be changed or removed.')) {
+    return;
+  }
+
+  var done = 0;
+  for (var i = 0; i < garments.length; i++) {
+    try {
+      await createGarment(garments[i]);
+      done++;
+      status.textContent = 'adding… ' + done + ' / ' + garments.length;
+    } catch (error) {
+      status.textContent = 'stopped at row ' + (done + 1) + ': ' + error.message + ' (' + done + ' added so far, already-added rows are safe)';
+      await reloadGrid();
+      return;
+    }
+  }
+  status.textContent = 'added ' + done + ' new item(s).';
+  showToast('CSV import complete');
   await reloadGrid();
 }
 

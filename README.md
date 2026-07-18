@@ -85,7 +85,14 @@ yourself. Five tabs:
    Wardrobe, click **Import CSV Data (one-time)**. Loads your original 75
    keeping + 29 letting go items. Running it twice creates duplicates, it
    doesn't check for existing rows.
-5. **Build the paper doll.** In the Paper Doll tab, upload a character
+5. **Add more anytime with your own CSV.** The **Upload a CSV to Add
+   Items** button (next to the one-time import) takes any CSV shaped like
+   `wardrobe_import_template.csv` (included alongside this project) and
+   creates a brand new item for every row. It only ever adds, nothing
+   already in your wardrobe is touched, changed, or removed, so it's safe
+   to use again and again as you catalog more of your closet, including
+   the new `jewelry`, `hat`, and `bag` categories.
+6. **Build the paper doll.** In the Paper Doll tab, upload a character
    image, then upload an illustration and drag it into place for each
    piece you want on the home page figure.
 
