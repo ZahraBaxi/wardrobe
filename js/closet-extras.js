@@ -441,39 +441,76 @@ function renderDollAdmin() {
   count.textContent = placed.length + ' of ' + allGarments.length + ' active items placed';
 
   placed.forEach(function (g) {
+    var wrap = document.createElement('div');
+    wrap.className = 'doll-piece-wrap';
+    wrap.style.left = g.dollX + '%';
+    wrap.style.top = g.dollY + '%';
+    wrap.style.width = g.dollWidth + '%';
+    wrap.style.zIndex = g.dollZ;
+    wrap.dataset.id = g.id;
+
     var img = document.createElement('img');
     img.src = g.illustration.url;
-    img.className = 'doll-piece';
-    img.style.left = g.dollX + '%';
-    img.style.top = g.dollY + '%';
-    img.style.width = g.dollWidth + '%';
-    img.style.zIndex = g.dollZ;
-    img.style.cursor = 'grab';
-    img.dataset.id = g.id;
-    img.addEventListener('pointerdown', function (e) {
+    img.className = 'doll-piece-img';
+    img.draggable = false;
+    wrap.appendChild(img);
+
+    var handle = document.createElement('div');
+    handle.className = 'doll-resize-handle';
+    handle.title = 'drag to resize';
+    wrap.appendChild(handle);
+
+    wrap.style.cursor = 'grab';
+    wrap.addEventListener('pointerdown', function (e) {
+      if (e.target === handle) return; // handle has its own drag below
       dollDragging = g.id;
-      img.setPointerCapture(e.pointerId);
-      img.style.cursor = 'grabbing';
+      wrap.setPointerCapture(e.pointerId);
+      wrap.style.cursor = 'grabbing';
     });
-    img.addEventListener('pointermove', function (e) {
+    wrap.addEventListener('pointermove', function (e) {
       if (dollDragging !== g.id) return;
       var rect = stage.getBoundingClientRect();
       var x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
       var y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
-      img.style.left = x + '%';
-      img.style.top = y + '%';
+      wrap.style.left = x + '%';
+      wrap.style.top = y + '%';
       g.dollX = Math.round(x * 10) / 10;
       g.dollY = Math.round(y * 10) / 10;
     });
-    img.addEventListener('pointerup', function (e) {
+    wrap.addEventListener('pointerup', function (e) {
       if (dollDragging !== g.id) return;
       dollDragging = null;
-      img.style.cursor = 'grab';
+      wrap.style.cursor = 'grab';
       updateGarment(g.id, { dollX: g.dollX, dollY: g.dollY }).catch(function (err) {
         showToast('could not save position: ' + err.message);
       });
     });
-    stage.appendChild(img);
+
+    var resizing = null;
+    handle.addEventListener('pointerdown', function (e) {
+      e.stopPropagation();
+      var rect = stage.getBoundingClientRect();
+      resizing = { startX: e.clientX, startWidth: g.dollWidth, stageWidth: rect.width };
+      handle.setPointerCapture(e.pointerId);
+    });
+    handle.addEventListener('pointermove', function (e) {
+      if (!resizing) return;
+      var deltaPercent = ((e.clientX - resizing.startX) / resizing.stageWidth) * 100;
+      var newWidth = Math.max(6, Math.min(90, resizing.startWidth + deltaPercent * 2));
+      wrap.style.width = newWidth + '%';
+      g.dollWidth = Math.round(newWidth * 10) / 10;
+      var slider = document.querySelector('.doll-size-slider[data-id="' + g.id + '"]');
+      if (slider) slider.value = g.dollWidth;
+    });
+    handle.addEventListener('pointerup', function (e) {
+      if (!resizing) return;
+      resizing = null;
+      updateGarment(g.id, { dollWidth: g.dollWidth }).catch(function (err) {
+        showToast('could not save size: ' + err.message);
+      });
+    });
+
+    stage.appendChild(wrap);
   });
 
   list.innerHTML = allGarments
@@ -489,10 +526,35 @@ function renderDollAdmin() {
             '<button type="button" class="doll-upload-btn">' + (hasIllustration ? 'Replace' : 'Upload') + '</button>' +
             (hasIllustration ? '<button type="button" class="danger doll-remove-btn">Remove from Doll</button>' : '') +
           '</span>' +
-        '</div>'
+        '</div>' +
+        (hasIllustration && g.dollX != null
+          ? '<div class="doll-size-row">' +
+              '<label>Size</label>' +
+              '<input type="range" class="doll-size-slider" data-id="' + g.id + '" min="6" max="90" step="1" value="' + g.dollWidth + '">' +
+            '</div>'
+          : '')
       );
     })
     .join('');
+
+  list.querySelectorAll('.doll-size-slider').forEach(function (slider) {
+    slider.addEventListener('input', function () {
+      var id = slider.dataset.id;
+      var g = allGarments.find(function (x) { return x.id === id; });
+      if (!g) return;
+      g.dollWidth = parseFloat(slider.value);
+      var wrap = stage.querySelector('.doll-piece-wrap[data-id="' + id + '"]');
+      if (wrap) wrap.style.width = g.dollWidth + '%';
+    });
+    slider.addEventListener('change', function () {
+      var id = slider.dataset.id;
+      var g = allGarments.find(function (x) { return x.id === id; });
+      if (!g) return;
+      updateGarment(id, { dollWidth: g.dollWidth }).catch(function (err) {
+        showToast('could not save size: ' + err.message);
+      });
+    });
+  });
 
   list.querySelectorAll('.doll-upload-btn').forEach(function (btn) {
     var row = btn.closest('.manage-row');
