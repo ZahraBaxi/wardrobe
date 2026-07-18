@@ -1107,8 +1107,15 @@ section.tight { padding: var(--space-3) 0; }
 .row-actions button.danger:hover { border-color: var(--rust); color: var(--rust); }
 
 @media (max-width: 720px) {
-  .manage-row { grid-template-columns: 32px 1fr auto; }
-  .manage-row .row-meta:nth-of-type(n+2) { display: none; }
+  .manage-row {
+    display: flex !important;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4em 0.6em;
+    padding: 0.6em 0.4em;
+  }
+  .manage-row .row-name { flex: 1 1 100%; }
+  .manage-row .row-actions { flex: 1 1 100%; justify-content: flex-start; margin-top: 0.3em; }
 }
 
 .edit-panel {
@@ -1237,6 +1244,55 @@ section.tight { padding: var(--space-3) 0; }
 
 .row-saved-flash { background: rgba(123,139,90,0.18) !important; transition: background 1.2s ease; }
 
+@media (max-width: 720px) {
+  .grid-table, .grid-table thead, .grid-table tbody, .grid-table tr, .grid-table td {
+    display: block;
+    width: 100% !important;
+  }
+  .grid-table thead { display: none; }
+  .grid-table tr {
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    margin-bottom: 0.8em;
+    padding: 0.6em 0.7em;
+    position: relative;
+  }
+  .grid-table td {
+    border-bottom: none;
+    padding: 0.35em 0;
+  }
+  .grid-table td.cell-editable::before,
+  .grid-table td.cell-checkbox::before {
+    content: attr(data-label);
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-soft);
+    margin-bottom: 0.15em;
+  }
+  .grid-table td.cell-photo {
+    position: absolute;
+    top: 0.6em;
+    right: 0.7em;
+    width: auto !important;
+  }
+  .grid-table td.cell-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    text-align: left;
+  }
+  .grid-table td.cell-checkbox::before { margin-bottom: 0; }
+  .grid-table td.cell-actions {
+    text-align: left;
+    margin-top: 0.4em;
+    padding-top: 0.5em;
+    border-top: 1px solid var(--line-soft);
+  }
+}
+
 /* ---------- paper doll ---------- */
 
 #doll-wrap {
@@ -1284,6 +1340,18 @@ section.tight { padding: var(--space-3) 0; }
 
 @media (max-width: 780px) {
   #doll-wrap { grid-template-columns: 1fr; }
+}
+
+.doll-admin-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 420px) 1fr;
+  gap: var(--space-3);
+  margin-top: 1.5em;
+  align-items: start;
+}
+
+@media (max-width: 780px) {
+  .doll-admin-layout { grid-template-columns: 1fr; }
 }
 
 .doll-caption {
@@ -1377,3 +1445,30 @@ section.tight { padding: var(--space-3) 0; }
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------- mobile-wide fixes ---------- */
+
+@media (max-width: 600px) {
+  /* prevent iOS Safari from auto-zooming when a form field gets focus */
+  input[type="text"],
+  input[type="number"],
+  input[type="date"],
+  input[type="password"],
+  input[type="email"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  .wrap { padding: 0 1.1rem; }
+
+  .cal-grid { gap: 3px; }
+  .cal-cell { font-size: 0.78rem; }
+  .cal-dow { font-size: 0.6rem; padding: 0.25em 0; }
+
+  .btn { padding: 0.85em 1.2em; }
+
+  .specimen-card, .edit-panel, .uniform-card { padding: var(--space-2); }
+
+  table.spec-table td:first-child { width: 44%; }
+}

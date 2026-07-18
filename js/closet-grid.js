@@ -109,19 +109,19 @@ function rowMarkup(g) {
 
   return (
     '<tr data-id="' + g.id + '">' +
-      '<td class="cell-photo">' +
+      '<td class="cell-photo" data-label="Photo">' +
         '<input type="file" accept="image/*" capture="environment" class="photo-input" style="display:none">' +
         photoCell +
       '</td>' +
-      editableCell('name', g.name) +
-      '<td class="cell-editable" data-field="category">' +
+      editableCell('name', g.name, null, 'Name') +
+      '<td class="cell-editable" data-field="category" data-label="Category">' +
         '<select class="field-category">' + catOptions + '</select>' +
       '</td>' +
-      editableCell('brand', g.brand) +
-      editableCell('color', g.color) +
-      editableCell('loveRating', g.loveRating, 'number') +
-      '<td class="cell-checkbox"><input type="checkbox" class="field-keep"' + (g.keep ? ' checked' : '') + '></td>' +
-      '<td class="cell-actions">' +
+      editableCell('brand', g.brand, null, 'Brand') +
+      editableCell('color', g.color, null, 'Color') +
+      editableCell('loveRating', g.loveRating, 'number', 'Love') +
+      '<td class="cell-checkbox" data-label="Keep"><input type="checkbox" class="field-keep"' + (g.keep ? ' checked' : '') + '></td>' +
+      '<td class="cell-actions" data-label="">' +
         '<button type="button" class="btn quiet expand-btn" style="font-size:0.65rem; padding:0.3em 0.7em">More</button> ' +
         '<button type="button" class="btn quiet delete-row-btn" style="font-size:0.65rem; padding:0.3em 0.7em; color:var(--rust)">Delete</button>' +
       '</td>' +
@@ -129,8 +129,8 @@ function rowMarkup(g) {
   );
 }
 
-function editableCell(field, value, type) {
-  return '<td class="cell-editable" data-field="' + field + '">' + escHtmlG(value == null ? '' : value) + '<input type="' + (type || 'text') + '" value="' + escHtmlG(value == null ? '' : value) + '" style="display:none"></td>';
+function editableCell(field, value, type, label) {
+  return '<td class="cell-editable" data-field="' + field + '" data-label="' + (label || field) + '">' + escHtmlG(value == null ? '' : value) + '<input type="' + (type || 'text') + '" value="' + escHtmlG(value == null ? '' : value) + '" style="display:none"></td>';
 }
 
 function escHtmlG(value) {
