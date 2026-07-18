@@ -207,6 +207,10 @@ function createOutfit(fields) { return createInClass('Outfit', fields); }
 function updateOutfit(id, fields) { return updateInClass('Outfit', id, fields); }
 function deleteOutfit(id) { return deleteInClass('Outfit', id); }
 
+function fetchWornLogs() { return fetchClass('WornLog', '-date'); }
+function createWornLog(fields) { return createInClass('WornLog', fields); }
+function deleteWornLog(id) { return deleteInClass('WornLog', id); }
+
 /* singleton site config: one row holding the paper doll's character image */
 async function fetchSiteConfig() {
   var rows = await fetchClass('SiteConfig');
@@ -275,7 +279,18 @@ function normalizeGarment(row) {
     dollX: typeof row.dollX === 'number' ? row.dollX : null,
     dollY: typeof row.dollY === 'number' ? row.dollY : null,
     dollWidth: typeof row.dollWidth === 'number' ? row.dollWidth : 30,
-    dollZ: typeof row.dollZ === 'number' ? row.dollZ : 1
+    dollZ: typeof row.dollZ === 'number' ? row.dollZ : 1,
+    lastWorn: row.lastWorn || ''
+  };
+}
+
+function normalizeWornLog(row) {
+  return {
+    id: row.objectId,
+    date: row.date || '',
+    garmentIds: row.garmentIds || [],
+    outfitId: row.outfitId || '',
+    notes: row.notes || ''
   };
 }
 

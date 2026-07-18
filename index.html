@@ -19,6 +19,7 @@
       <a href="wardrobe.html">Wardrobe</a>
       <a href="uniforms.html">Uniforms</a>
       <a href="outfits.html">Outfits</a>
+      <a href="calendar.html">Calendar</a>
       <a href="constitution.html">Constitution</a>
       <a href="wishlist.html">Wishlist</a>
       <a href="repairs.html">Repairs</a>
@@ -68,6 +69,7 @@
           <p class="lede" style="font-size:0.9rem">Click a piece on the figure to see it here.</p>
         </div>
       </div>
+      <p class="doll-caption" id="doll-caption"></p>
     </div>
   </section>
 
@@ -147,14 +149,7 @@
     const dressed = WARDROBE.filter((g) => g.illustration && g.dollX != null && g.dollY != null);
 
     if (!dressed.length) {
-      const note = document.createElement("div");
-      note.className = "empty-state";
-      note.style.position = "absolute";
-      note.style.bottom = "1em";
-      note.style.left = "1em";
-      note.style.right = "1em";
-      note.textContent = "No pieces placed yet. Add illustrations and positions in Closet Admin \u2192 Paper Doll.";
-      stage.appendChild(note);
+      document.getElementById("doll-caption").textContent = "No pieces placed yet. Add illustrations and positions in Closet Admin \u2192 Paper Doll.";
     }
 
     dressed

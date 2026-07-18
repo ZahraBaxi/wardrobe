@@ -16,6 +16,7 @@ var RETIRED_ITEMS = [];
 var REPAIRS = [];
 var WISHLIST = [];
 var OUTFITS = [];
+var WORN_LOGS = [];
 var SITE_CONFIG = null;
 
 var siteDataReady = (async function () {
@@ -43,6 +44,12 @@ var siteDataReady = (async function () {
     OUTFITS = (await fetchOutfits()).map(normalizeOutfit);
   } catch (error) {
     console.error('Could not load outfits from Back4App:', error);
+  }
+
+  try {
+    WORN_LOGS = (await fetchWornLogs()).map(normalizeWornLog);
+  } catch (error) {
+    console.error('Could not load worn logs from Back4App:', error);
   }
 
   try {

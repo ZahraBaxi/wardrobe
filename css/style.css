@@ -1138,25 +1138,35 @@ section.tight { padding: var(--space-3) 0; }
 
 .grid-table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 0.84rem;
   background: var(--paper);
 }
 
+.grid-table col.col-photo { width: 52px; }
+.grid-table col.col-name { width: 24%; }
+.grid-table col.col-category { width: 12%; }
+.grid-table col.col-brand { width: 16%; }
+.grid-table col.col-color { width: 16%; }
+.grid-table col.col-love { width: 9%; }
+.grid-table col.col-keep { width: 9%; }
+.grid-table col.col-actions { width: 128px; }
+
 .grid-table th {
   text-align: left;
   font-family: var(--font-mono);
-  font-size: 0.66rem;
+  font-size: 0.64rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--indigo);
   border-bottom: 1px solid var(--line);
-  padding: 0.5em 0.6em;
-  white-space: nowrap;
+  padding: 0.5em 0.5em;
   position: sticky;
   top: 0;
   background: var(--paper);
   z-index: 2;
+  overflow-wrap: break-word;
 }
 
 .grid-table td {
@@ -1168,13 +1178,11 @@ section.tight { padding: var(--space-3) 0; }
 .grid-table tr:hover td { background: var(--paper-deep); }
 
 .cell-editable {
-  padding: 0.55em 0.6em;
+  padding: 0.55em 0.5em;
   cursor: text;
-  min-width: 70px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 220px;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .cell-editable:hover { outline: 1px solid var(--line); outline-offset: -1px; }
@@ -1189,10 +1197,10 @@ section.tight { padding: var(--space-3) 0; }
   background: var(--paper);
   color: var(--ink);
   border-radius: 2px;
+  box-sizing: border-box;
 }
 
 .cell-photo {
-  width: 46px;
   padding: 0.3em;
 }
 
@@ -1224,7 +1232,8 @@ section.tight { padding: var(--space-3) 0; }
 .cell-checkbox { text-align: center; padding: 0.5em; }
 .cell-checkbox input { accent-color: var(--indigo); width: 16px; height: 16px; }
 
-.cell-actions { text-align: right; padding: 0.4em 0.6em; white-space: nowrap; }
+.cell-actions { text-align: right; padding: 0.4em 0.4em; }
+.cell-actions button { margin-bottom: 0.25em; }
 
 .row-saved-flash { background: rgba(123,139,90,0.18) !important; transition: background 1.2s ease; }
 
@@ -1275,6 +1284,84 @@ section.tight { padding: var(--space-3) 0; }
 
 @media (max-width: 780px) {
   #doll-wrap { grid-template-columns: 1fr; }
+}
+
+.doll-caption {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  text-align: center;
+  margin-top: 1em;
+}
+
+/* ---------- outfit calendar ---------- */
+
+.cal-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.8em;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.cal-dow {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  text-align: center;
+  padding: 0.4em 0;
+}
+
+.cal-cell {
+  aspect-ratio: 1;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2em;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--ink);
+  border-radius: 2px;
+}
+
+.cal-cell:hover { border-color: var(--indigo); }
+.cal-cell--empty { border: none; background: none; cursor: default; }
+.cal-cell--today { border-color: var(--rust); border-width: 2px; }
+.cal-cell--selected { background: var(--indigo); color: var(--paper); }
+.cal-cell--selected .cal-dot { background: var(--paper); }
+
+.cal-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--indigo);
+}
+
+.cal-entry {
+  border-top: 1px solid var(--line-soft);
+  padding: 0.8em 0;
+}
+.cal-entry:first-child { border-top: none; padding-top: 0; }
+
+@media (max-width: 780px) {
+  .cal-layout { grid-template-columns: 1fr; }
 }
 
 .spinner {

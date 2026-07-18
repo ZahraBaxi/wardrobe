@@ -20,6 +20,7 @@
       <a href="wardrobe.html">Wardrobe</a>
       <a href="uniforms.html">Uniforms</a>
       <a href="outfits.html">Outfits</a>
+      <a href="calendar.html">Calendar</a>
       <a href="constitution.html">Constitution</a>
       <a href="wishlist.html">Wishlist</a>
       <a href="repairs.html">Repairs</a>
@@ -118,8 +119,12 @@
 
         <div id="m-edit-slot"></div>
 
-        <div style="overflow-x:auto">
-          <table class="grid-table" id="m-grid">
+        <table class="grid-table" id="m-grid">
+            <colgroup>
+              <col class="col-photo"><col class="col-name"><col class="col-category">
+              <col class="col-brand"><col class="col-color"><col class="col-love">
+              <col class="col-keep"><col class="col-actions">
+            </colgroup>
             <thead>
               <tr>
                 <th></th>
@@ -127,8 +132,6 @@
                 <th>Category</th>
                 <th>Brand</th>
                 <th>Color</th>
-                <th>Material</th>
-                <th>Size</th>
                 <th>Love</th>
                 <th>Keep</th>
                 <th></th>
@@ -136,7 +139,6 @@
             </thead>
             <tbody id="m-grid-body"></tbody>
           </table>
-        </div>
       </div>
 
 

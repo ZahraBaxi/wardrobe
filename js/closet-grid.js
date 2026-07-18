@@ -85,7 +85,7 @@ function renderGrid() {
   document.querySelector('#m-count').textContent = filtered.length + ' of ' + currentSetRows().length + ' item' + (currentSetRows().length === 1 ? '' : 's');
 
   if (!filtered.length) {
-    body.innerHTML = '<tr><td colspan="10" class="empty-state">no items match.</td></tr>';
+    body.innerHTML = '<tr><td colspan="8" class="empty-state">no items match.</td></tr>';
     return;
   }
 
@@ -119,8 +119,6 @@ function rowMarkup(g) {
       '</td>' +
       editableCell('brand', g.brand) +
       editableCell('color', g.color) +
-      editableCell('material', g.material) +
-      editableCell('size', g.size) +
       editableCell('loveRating', g.loveRating, 'number') +
       '<td class="cell-checkbox"><input type="checkbox" class="field-keep"' + (g.keep ? ' checked' : '') + '></td>' +
       '<td class="cell-actions">' +
@@ -269,13 +267,18 @@ function openExpand(id) {
       '<h3>' + escHtmlG(g.name) + ', full details</h3>' +
       '<div class="field-row">' +
         f('Layer Type', 'x-layertype', g.layerType) +
-        f('Made In', 'x-madein', g.madeIn) +
-        f('Where Purchased', 'x-where', g.wherePurchased) +
+        f('Material', 'x-material', g.material) +
+        f('Size', 'x-size', g.size) +
       '</div>' +
       '<div class="field-row">' +
+        f('Made In', 'x-madein', g.madeIn) +
+        f('Where Purchased', 'x-where', g.wherePurchased) +
         f('Date Acquired', 'x-date', g.dateAcquired, 'date') +
+      '</div>' +
+      '<div class="field-row">' +
         f('Cost ($)', 'x-cost', g.cost, 'number') +
         f('Times Worn', 'x-timesworn', g.timesWorn, 'number') +
+        f('Last Worn', 'x-lastworn', g.lastWorn, 'date') +
       '</div>' +
       '<div class="field-row">' +
         selectField('Wash Care', 'x-wash', WASH_OPTIONS_G, g.care ? g.care.wash : '') +
@@ -304,6 +307,8 @@ function openExpand(id) {
   buildCheckboxSetChecked(slot.querySelector('#x-uniforms'), UNIFORM_OPTIONS_G, 'x-uniforms', g.uniforms || []);
   buildCheckboxSetChecked(slot.querySelector('#x-season'), SEASON_OPTIONS_G, 'x-season', g.season || []);
 
+  slot.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
   slot.querySelector('#x-close').addEventListener('click', function () {
     expandedId = null;
     slot.innerHTML = '';
@@ -313,11 +318,14 @@ function openExpand(id) {
     var q = function (sel) { return slot.querySelector(sel); };
     var fields = {
       layerType: q('#x-layertype').value.trim() || null,
+      material: q('#x-material').value.trim(),
+      size: q('#x-size').value.trim(),
       madeIn: q('#x-madein').value.trim(),
       wherePurchased: q('#x-where').value.trim(),
       dateAcquired: q('#x-date').value,
       cost: parseFloat(q('#x-cost').value) || 0,
       timesWorn: parseInt(q('#x-timesworn').value, 10) || 0,
+      lastWorn: q('#x-lastworn').value,
       care: { wash: q('#x-wash').value.trim(), dry: q('#x-dry').value.trim() },
       highendTier: q('#x-tier').value.trim(),
       link: q('#x-link').value.trim(),

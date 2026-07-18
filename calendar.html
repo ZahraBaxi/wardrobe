@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Outfit Calendar, My Wardrobe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&family=Inter:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a href="index.html" class="brand"><span class="mark">IA / 13</span> My Wardrobe</a>
+    <button class="nav-toggle" aria-label="Toggle navigation">Menu</button>
+    <nav class="site-nav">
+      <a href="index.html">Home</a>
+      <a href="wardrobe.html">Wardrobe</a>
+      <a href="uniforms.html">Uniforms</a>
+      <a href="outfits.html">Outfits</a>
+      <a href="calendar.html" aria-current="page">Calendar</a>
+      <a href="constitution.html">Constitution</a>
+      <a href="wishlist.html">Wishlist</a>
+      <a href="repairs.html">Repairs</a>
+      <a href="statistics.html">Statistics</a>
+      <a href="field-notes.html">Field Notes</a>
+      <a href="about.html">About</a>
+      <a href="closet-admin.html">Admin</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="tight">
+    <div class="wrap">
+      <p class="eyebrow">Field Notebook, Page 2</p>
+      <h1>Outfit Calendar</h1>
+      <p class="lede">A record of what actually got worn. Logging a day here updates that item's wear count and cost per wear automatically.</p>
+
+      <div class="cal-layout" style="margin-top:var(--space-3)">
+        <div>
+          <div class="cal-nav">
+            <button class="btn quiet" id="cal-prev" type="button">&larr;</button>
+            <h2 id="cal-month-label" style="margin:0"></h2>
+            <button class="btn quiet" id="cal-next" type="button">&rarr;</button>
+          </div>
+          <div class="cal-grid" id="cal-grid"></div>
+        </div>
+
+        <div class="cal-side">
+          <div class="specimen-card" data-tag="Selected Day">
+            <h3 id="cal-selected-date" style="margin-top:0">Pick a day</h3>
+            <div id="cal-day-entries"></div>
+            <button class="btn primary" id="cal-log-btn" type="button" style="margin-top:1em">Log an Outfit</button>
+          </div>
+
+          <div class="specimen-card" data-tag="Worn A While Ago" style="margin-top:1.2em">
+            <div id="cal-stale-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="cal-form-slot"></div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span>Every wear logged here lowers that piece's cost per wear.</span>
+    <span>&larr; <a href="index.html" style="text-decoration:none">Back home</a></span>
+  </div>
+</footer>
+
+<script src="js/data.js"></script>
+<script src="js/back4app-client.js"></script>
+<script src="js/wardrobe-loader.js"></script>
+<script src="js/app.js"></script>
+<script>
+  let viewYear, viewMonth, selectedDate;
+
+  function isoDate(y, m, d) {
+    return `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  }
+
+  function todayIso() {
+    const t = new Date();
+    return isoDate(t.getFullYear(), t.getMonth(), t.getDate());
+  }
+
+  function logsForDate(dateStr) {
+    return WORN_LOGS.filter((w) => w.date === dateStr);
+  }
+
+  function renderCalendar() {
+    const label = document.getElementById("cal-month-label");
+    const grid = document.getElementById("cal-grid");
+    label.textContent = new Date(viewYear, viewMonth, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+
+    const firstWeekday = new Date(viewYear, viewMonth, 1).getDay();
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+    let html = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => `<div class="cal-dow">${d}</div>`).join("");
+
+    for (let i = 0; i < firstWeekday; i++) html += `<div class="cal-cell cal-cell--empty"></div>`;
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = isoDate(viewYear, viewMonth, day);
+      const entries = logsForDate(dateStr);
+      const isToday = dateStr === todayIso();
+      const isSelected = dateStr === selectedDate;
+      html += `
+        <button type="button" class="cal-cell${isToday ? " cal-cell--today" : ""}${isSelected ? " cal-cell--selected" : ""}" data-date="${dateStr}">
+          <span class="cal-daynum">${day}</span>
+          ${entries.length ? `<span class="cal-dot" title="${entries.length} outfit logged"></span>` : ""}
+        </button>
+      `;
+    }
+
+    grid.innerHTML = html;
+    grid.querySelectorAll(".cal-cell[data-date]").forEach((btn) => {
+      btn.addEventListener("click", () => selectDate(btn.dataset.date));
+    });
+  }
+
+  function selectDate(dateStr) {
+    selectedDate = dateStr;
+    renderCalendar();
+    renderSelectedDay();
+  }
+
+  function renderSelectedDay() {
+    const heading = document.getElementById("cal-selected-date");
+    const entriesEl = document.getElementById("cal-day-entries");
+    if (!selectedDate) {
+      heading.textContent = "Pick a day";
+      entriesEl.innerHTML = "";
+      return;
+    }
+
+    const d = new Date(selectedDate + "T00:00:00");
+    heading.textContent = d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+
+    const entries = logsForDate(selectedDate);
+    if (!entries.length) {
+      entriesEl.innerHTML = `<p class="lede" style="font-size:0.88rem">Nothing logged for this day yet.</p>`;
+      return;
+    }
+
+    entriesEl.innerHTML = entries
+      .map((entry) => {
+        const garments = entry.garmentIds.map(byId).filter(Boolean);
+        return `
+          <div class="cal-entry">
+            <div class="tag-row">${garments.map((g) => `<a class="tag" href="item.html?id=${g.id}">${g.name}</a>`).join("")}</div>
+            ${entry.notes ? `<p style="font-size:0.85rem; margin:0.4em 0 0">${entry.notes}</p>` : ""}
+            <button type="button" class="btn quiet cal-delete-entry" data-id="${entry.id}" style="font-size:0.7rem; margin-top:0.5em; padding:0.3em 0.7em">Remove</button>
+          </div>
+        `;
+      })
+      .join("");
+
+    entriesEl.querySelectorAll(".cal-delete-entry").forEach((btn) => {
+      btn.addEventListener("click", () => removeEntry(btn.dataset.id));
+    });
+  }
+
+  async function removeEntry(id) {
+    const entry = WORN_LOGS.find((w) => w.id === id);
+    if (!entry) return;
+    if (!window.confirm("Remove this logged outfit? This will lower the wear count on its pieces.")) return;
+
+    try {
+      await deleteWornLog(id);
+      WORN_LOGS = WORN_LOGS.filter((w) => w.id !== id);
+
+      for (const garmentId of entry.garmentIds) {
+        const g = byId(garmentId);
+        if (!g) continue;
+        const newTimesWorn = Math.max(0, g.timesWorn - 1);
+        const remainingDates = WORN_LOGS.filter((w) => w.garmentIds.includes(garmentId)).map((w) => w.date).sort();
+        const newLastWorn = remainingDates.length ? remainingDates[remainingDates.length - 1] : "";
+        await updateGarment(garmentId, { timesWorn: newTimesWorn, lastWorn: newLastWorn });
+        g.timesWorn = newTimesWorn;
+        g.lastWorn = newLastWorn;
+      }
+
+      renderCalendar();
+      renderSelectedDay();
+      renderStale();
+    } catch (error) {
+      alert("could not remove: " + error.message);
+    }
+  }
+
+  function renderStale() {
+    const list = document.getElementById("cal-stale-list");
+    const withDates = WARDROBE.filter((g) => g.lastWorn).sort((a, b) => a.lastWorn.localeCompare(b.lastWorn));
+    const neverWorn = WARDROBE.filter((g) => !g.lastWorn);
+    const combined = [...withDates.slice(0, 4), ...neverWorn.slice(0, Math.max(0, 6 - withDates.slice(0, 4).length))];
+
+    if (!combined.length) {
+      list.innerHTML = `<p class="lede" style="font-size:0.88rem">Log a few outfits to see this fill in.</p>`;
+      return;
+    }
+
+    list.innerHTML = combined
+      .map((g) => `<dt><a href="item.html?id=${g.id}">${g.name}</a></dt><dd>${g.lastWorn ? "last worn " + g.lastWorn : "never logged"}</dd>`)
+      .join("");
+    list.outerHTML = `<dl class="kv-list" id="cal-stale-list">${list.innerHTML}</dl>`;
+  }
+
+  function openLogForm() {
+    const slot = document.getElementById("cal-form-slot");
+    const dateVal = selectedDate || todayIso();
+
+    const outfitOptions = OUTFITS.map((o) => `<option value="${o.id}">${o.name || "Untitled Outfit"}</option>`).join("");
+    const garmentChecks = WARDROBE
+      .map((g) => `<label><input type="checkbox" name="cal-garment" value="${g.id}"> ${g.name}</label>`)
+      .join("");
+
+    slot.innerHTML = `
+      <div class="edit-panel">
+        <h3>Log an Outfit</h3>
+        <div class="field-row">
+          <div class="field-group"><label for="cal-date">Date</label><input type="date" id="cal-date" value="${dateVal}"></div>
+          <div class="field-group"><label for="cal-outfit">Use a Saved Outfit (optional)</label>
+            <select id="cal-outfit"><option value="">Build from scratch instead</option>${outfitOptions}</select>
+          </div>
+        </div>
+        <div class="field-group" id="cal-scratch-group">
+          <label>Or Pick Pieces From Scratch</label>
+          <div class="checkbox-set" id="cal-garments">${garmentChecks}</div>
+        </div>
+        <div class="field-group"><label for="cal-notes">Notes</label><textarea id="cal-notes" placeholder="occasion, weather, how it felt"></textarea></div>
+        <div style="display:flex; gap:0.6em">
+          <button type="button" class="btn primary" id="cal-save">Save</button>
+          <button type="button" class="btn quiet" id="cal-cancel">Cancel</button>
+        </div>
+      </div>
+    `;
+    slot.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    const outfitSelect = document.getElementById("cal-outfit");
+    const scratchGroup = document.getElementById("cal-scratch-group");
+    outfitSelect.addEventListener("change", () => {
+      scratchGroup.style.display = outfitSelect.value ? "none" : "block";
+    });
+
+    document.getElementById("cal-cancel").addEventListener("click", () => { slot.innerHTML = ""; });
+    document.getElementById("cal-save").addEventListener("click", saveLogEntry);
+  }
+
+  async function saveLogEntry() {
+    const date = document.getElementById("cal-date").value;
+    if (!date) { alert("pick a date"); return; }
+
+    const outfitId = document.getElementById("cal-outfit").value;
+    let garmentIds;
+    if (outfitId) {
+      const outfit = OUTFITS.find((o) => o.id === outfitId);
+      garmentIds = outfit ? outfit.garmentIds : [];
+    } else {
+      garmentIds = Array.from(document.querySelectorAll('input[name="cal-garment"]:checked')).map((el) => el.value);
+    }
+
+    if (!garmentIds.length) { alert("pick at least one piece, or a saved outfit"); return; }
+
+    const notes = document.getElementById("cal-notes").value.trim();
+    const saveBtn = document.getElementById("cal-save");
+    saveBtn.disabled = true;
+    saveBtn.textContent = "saving…";
+
+    try {
+      const created = await createWornLog({ date, garmentIds, outfitId, notes });
+      WORN_LOGS.push({ id: created.objectId, date, garmentIds, outfitId, notes });
+
+      for (const garmentId of garmentIds) {
+        const g = byId(garmentId);
+        if (!g) continue;
+        const newTimesWorn = (g.timesWorn || 0) + 1;
+        const newLastWorn = !g.lastWorn || date > g.lastWorn ? date : g.lastWorn;
+        await updateGarment(garmentId, { timesWorn: newTimesWorn, lastWorn: newLastWorn, wornInLastYear: true });
+        g.timesWorn = newTimesWorn;
+        g.lastWorn = newLastWorn;
+      }
+
+      document.getElementById("cal-form-slot").innerHTML = "";
+      selectedDate = date;
+      renderCalendar();
+      renderSelectedDay();
+      renderStale();
+    } catch (error) {
+      alert("could not save: " + error.message);
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Save";
+    }
+  }
+
+  siteDataReady.then(() => {
+    const now = new Date();
+    viewYear = now.getFullYear();
+    viewMonth = now.getMonth();
+    selectedDate = todayIso();
+
+    renderCalendar();
+    renderSelectedDay();
+    renderStale();
+
+    document.getElementById("cal-prev").addEventListener("click", () => {
+      viewMonth -= 1;
+      if (viewMonth < 0) { viewMonth = 11; viewYear -= 1; }
+      renderCalendar();
+    });
+    document.getElementById("cal-next").addEventListener("click", () => {
+      viewMonth += 1;
+      if (viewMonth > 11) { viewMonth = 0; viewYear += 1; }
+      renderCalendar();
+    });
+    document.getElementById("cal-log-btn").addEventListener("click", openLogForm);
+  });
+</script>
+</body>
+</html>

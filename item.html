@@ -19,6 +19,7 @@
       <a href="wardrobe.html" aria-current="page">Wardrobe</a>
       <a href="uniforms.html">Uniforms</a>
       <a href="outfits.html">Outfits</a>
+      <a href="calendar.html">Calendar</a>
       <a href="constitution.html">Constitution</a>
       <a href="wishlist.html">Wishlist</a>
       <a href="repairs.html">Repairs</a>
@@ -105,6 +106,7 @@
             <tr><td>Made In</td><td>${g.madeIn}</td></tr>
             <tr><td>Love Rating</td><td class="love-rating">${loveStars(g.loveRating)}</td></tr>
             <tr><td>Times Worn</td><td>${g.timesWorn}</td></tr>
+            <tr><td>Last Worn</td><td>${g.lastWorn || "Not logged yet"}</td></tr>
             <tr><td>Uniform Categories</td><td>${g.uniforms.join(", ")}</td></tr>
             <tr><td>Season</td><td>${g.season.join(", ")}</td></tr>
             <tr><td>Care</td><td>${[g.care?.wash, g.care?.dry].filter(Boolean).join(" · ")}</td></tr>
