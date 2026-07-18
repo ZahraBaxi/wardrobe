@@ -64,6 +64,7 @@ async function reloadGrid() {
     gridRows = [];
   }
   renderGrid();
+  refreshDatalists();
 }
 
 function currentSetRows() {
@@ -103,10 +104,6 @@ function rowMarkup(g) {
     ? '<img class="cell-photo-thumb" src="' + g.photo.url + '" alt="">'
     : '<div class="cell-photo-placeholder">+</div>';
 
-  var catOptions = CATEGORY_OPTIONS_G.map(function (c) {
-    return '<option value="' + c + '"' + (g.category === c ? ' selected' : '') + '>' + c + '</option>';
-  }).join('');
-
   return (
     '<tr data-id="' + g.id + '">' +
       '<td class="cell-photo" data-label="Photo">' +
@@ -114,11 +111,9 @@ function rowMarkup(g) {
         photoCell +
       '</td>' +
       editableCell('name', g.name, null, 'Name') +
-      '<td class="cell-editable" data-field="category" data-label="Category">' +
-        '<select class="field-category">' + catOptions + '</select>' +
-      '</td>' +
-      editableCell('brand', g.brand, null, 'Brand') +
-      editableCell('color', g.color, null, 'Color') +
+      editableCell('category', g.category, null, 'Category', 'dl-category') +
+      editableCell('brand', g.brand, null, 'Brand', 'dl-brand') +
+      colorCellMarkup(g) +
       editableCell('loveRating', g.loveRating, 'number', 'Love') +
       '<td class="cell-checkbox" data-label="Keep"><input type="checkbox" class="field-keep"' + (g.keep ? ' checked' : '') + '></td>' +
       '<td class="cell-actions" data-label="">' +
@@ -129,8 +124,68 @@ function rowMarkup(g) {
   );
 }
 
-function editableCell(field, value, type, label) {
-  return '<td class="cell-editable" data-field="' + field + '" data-label="' + (label || field) + '">' + escHtmlG(value == null ? '' : value) + '<input type="' + (type || 'text') + '" value="' + escHtmlG(value == null ? '' : value) + '" style="display:none"></td>';
+function editableCell(field, value, type, label, datalistId) {
+  var listAttr = datalistId ? ' list="' + datalistId + '"' : '';
+  return '<td class="cell-editable" data-field="' + field + '" data-label="' + (label || field) + '">' +
+    '<span class="cell-text">' + escHtmlG(value == null ? '' : value) + '</span>' +
+    '<input type="' + (type || 'text') + '"' + listAttr + ' value="' + escHtmlG(value == null ? '' : value) + '" style="display:none">' +
+  '</td>';
+}
+
+function colorCellMarkup(g) {
+  var swatch = g.swatch || '#9C9689';
+  return '<td class="cell-editable cell-color" data-field="color" data-label="Color">' +
+    '<button type="button" class="swatch-btn" style="background:' + escHtmlG(swatch) + '" title="pick the exact color, includes an eyedropper in Chrome/Edge"></button>' +
+    '<span class="cell-text">' + escHtmlG(g.color || '') + '</span>' +
+    '<input type="text" list="dl-color" value="' + escHtmlG(g.color || '') + '" style="display:none">' +
+    '<input type="color" class="swatch-input" value="' + escHtmlG(swatch) + '" style="display:none">' +
+  '</td>';
+}
+
+/* ---------------- combo datalists ---------------- */
+// Populates each <datalist> with every distinct value already in use
+// across the wardrobe, plus a small set of sensible defaults so the
+// list isn't empty on a brand new install. Typing something new in
+// any of these fields just saves as free text, it becomes an option
+// for next time automatically since it's now "in use".
+
+var DATALIST_DEFAULTS_G = {
+  category: CATEGORY_OPTIONS_G,
+  tier: TIER_OPTIONS_G,
+  wash: WASH_OPTIONS_G,
+  dry: DRY_OPTIONS_G
+};
+
+function distinctValuesG(field, path) {
+  var values = {};
+  gridRows.forEach(function (g) {
+    var v = path ? (g[path] && g[path][field]) : g[field];
+    if (v) values[v] = true;
+  });
+  return Object.keys(values).sort(function (a, b) { return a.localeCompare(b); });
+}
+
+function refreshDatalists() {
+  var specs = [
+    { id: 'dl-category', field: 'category', key: 'category' },
+    { id: 'dl-brand', field: 'brand' },
+    { id: 'dl-color', field: 'color' },
+    { id: 'dl-material', field: 'material' },
+    { id: 'dl-size', field: 'size' },
+    { id: 'dl-tier', field: 'highendTier', key: 'tier' },
+    { id: 'dl-wash', field: 'wash', path: 'care', key: 'wash' },
+    { id: 'dl-dry', field: 'dry', path: 'care', key: 'dry' },
+    { id: 'dl-madein', field: 'madeIn' }
+  ];
+
+  specs.forEach(function (spec) {
+    var el = document.getElementById(spec.id);
+    if (!el) return;
+    var defaults = spec.key && DATALIST_DEFAULTS_G[spec.key] ? DATALIST_DEFAULTS_G[spec.key] : [];
+    var found = distinctValuesG(spec.field, spec.path);
+    var combined = defaults.concat(found.filter(function (v) { return defaults.indexOf(v) === -1; }));
+    el.innerHTML = combined.map(function (v) { return '<option value="' + escHtmlG(v) + '">'; }).join('');
+  });
 }
 
 function escHtmlG(value) {
@@ -141,18 +196,18 @@ function escHtmlG(value) {
 function wireRow(body) {
   // click-to-edit text/number cells
   body.querySelectorAll('.cell-editable[data-field]').forEach(function (td) {
-    if (td.querySelector('select')) return; // category handled separately
-    td.addEventListener('click', function () {
-      if (td.querySelector('input').style.display !== 'none') return;
-      var input = td.querySelector('input');
-      td.childNodes[0].nodeValue = '';
+    td.addEventListener('click', function (e) {
+      if (e.target.closest('.swatch-btn')) return; // handled separately below
+      var input = td.querySelector('input[type="text"], input[type="number"]');
+      if (!input || input.style.display !== 'none') return;
+      td.querySelector('.cell-text').textContent = '';
       input.style.display = 'block';
       input.focus();
       input.select();
     });
   });
 
-  body.querySelectorAll('.cell-editable[data-field] input').forEach(function (input) {
+  body.querySelectorAll('.cell-editable[data-field] input[type="text"], .cell-editable[data-field] input[type="number"]').forEach(function (input) {
     var commit = function () {
       var td = input.closest('td');
       var field = td.dataset.field;
@@ -160,8 +215,8 @@ function wireRow(body) {
       var id = row.dataset.id;
       var value = input.type === 'number' ? (parseFloat(input.value) || 0) : input.value.trim();
       input.style.display = 'none';
-      td.childNodes[0].nodeValue = String(value);
-      saveField(id, field, value, row);
+      td.querySelector('.cell-text').textContent = String(value);
+      saveField(id, field, value, row).then(refreshDatalists).catch(function () {});
     };
     input.addEventListener('blur', commit);
     input.addEventListener('keydown', function (e) {
@@ -170,10 +225,21 @@ function wireRow(body) {
     });
   });
 
-  body.querySelectorAll('.field-category').forEach(function (select) {
-    select.addEventListener('change', function () {
-      var row = select.closest('tr');
-      saveField(row.dataset.id, 'category', select.value, row);
+  // color swatch picker (separate from the color-name text field in the same cell)
+  body.querySelectorAll('.swatch-btn').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var td = btn.closest('td');
+      td.querySelector('.swatch-input').click();
+    });
+  });
+  body.querySelectorAll('.swatch-input').forEach(function (colorInput) {
+    colorInput.addEventListener('change', function () {
+      var td = colorInput.closest('td');
+      var row = td.closest('tr');
+      var id = row.dataset.id;
+      td.querySelector('.swatch-btn').style.background = colorInput.value;
+      saveField(id, 'swatch', colorInput.value, row);
     });
   });
 
@@ -267,11 +333,11 @@ function openExpand(id) {
       '<h3>' + escHtmlG(g.name) + ', full details</h3>' +
       '<div class="field-row">' +
         f('Layer Type', 'x-layertype', g.layerType) +
-        f('Material', 'x-material', g.material) +
-        f('Size', 'x-size', g.size) +
+        comboField('Material', 'x-material', g.material, 'dl-material') +
+        comboField('Size', 'x-size', g.size, 'dl-size') +
       '</div>' +
       '<div class="field-row">' +
-        f('Made In', 'x-madein', g.madeIn) +
+        comboField('Made In', 'x-madein', g.madeIn, 'dl-madein') +
         f('Where Purchased', 'x-where', g.wherePurchased) +
         f('Date Acquired', 'x-date', g.dateAcquired, 'date') +
       '</div>' +
@@ -281,9 +347,9 @@ function openExpand(id) {
         f('Last Worn', 'x-lastworn', g.lastWorn, 'date') +
       '</div>' +
       '<div class="field-row">' +
-        selectField('Wash Care', 'x-wash', WASH_OPTIONS_G, g.care ? g.care.wash : '') +
-        selectField('Dry Care', 'x-dry', DRY_OPTIONS_G, g.care ? g.care.dry : '') +
-        selectField('Quality Tier', 'x-tier', TIER_OPTIONS_G, g.highendTier) +
+        comboField('Wash Care', 'x-wash', g.care ? g.care.wash : '', 'dl-wash') +
+        comboField('Dry Care', 'x-dry', g.care ? g.care.dry : '', 'dl-dry') +
+        comboField('Quality Tier', 'x-tier', g.highendTier, 'dl-tier') +
       '</div>' +
       '<div class="field-row">' +
         f('Link', 'x-link', g.link) +
@@ -342,6 +408,7 @@ function openExpand(id) {
       await updateGarment(id, fields);
       Object.assign(g, fields);
       showToast('saved');
+      refreshDatalists();
     } catch (error) {
       showToast('save failed: ' + error.message);
     }
@@ -350,6 +417,10 @@ function openExpand(id) {
   function f(label, elId, value, type) {
     return '<div class="field-group"><label for="' + elId + '">' + label + '</label>' +
       '<input type="' + (type || 'text') + '" id="' + elId + '" value="' + escHtmlG(value) + '"></div>';
+  }
+  function comboField(label, elId, value, datalistId) {
+    return '<div class="field-group"><label for="' + elId + '">' + label + '</label>' +
+      '<input type="text" id="' + elId + '" list="' + datalistId + '" value="' + escHtmlG(value) + '"></div>';
   }
   function selectField(label, elId, options, currentValue) {
     return selectFieldMarkup(label, elId, options, currentValue);

@@ -153,23 +153,79 @@
         const garments = entry.garmentIds.map(byId).filter(Boolean);
         return `
           <div class="cal-entry">
-            <div class="tag-row">${garments.map((g) => `<a class="tag" href="item.html?id=${g.id}">${g.name}</a>`).join("")}</div>
+            <div class="tag-row">
+              ${garments
+                .map(
+                  (g) => `
+                    <span class="tag cal-tag-removable">
+                      <a href="item.html?id=${g.id}">${g.name}</a>
+                      <button type="button" class="cal-remove-piece" data-entry="${entry.id}" data-garment="${g.id}" title="remove just this piece">&times;</button>
+                    </span>
+                  `
+                )
+                .join("")}
+            </div>
             ${entry.notes ? `<p style="font-size:0.85rem; margin:0.4em 0 0">${entry.notes}</p>` : ""}
-            <button type="button" class="btn quiet cal-delete-entry" data-id="${entry.id}" style="font-size:0.7rem; margin-top:0.5em; padding:0.3em 0.7em">Remove</button>
+            <div style="display:flex; gap:0.5em; margin-top:0.5em">
+              <button type="button" class="btn quiet cal-edit-entry" data-id="${entry.id}" style="font-size:0.7rem; padding:0.3em 0.7em">Edit</button>
+              <button type="button" class="btn quiet cal-delete-entry" data-id="${entry.id}" style="font-size:0.7rem; padding:0.3em 0.7em">Remove Whole Day</button>
+            </div>
           </div>
         `;
       })
       .join("");
+
+    entriesEl.querySelectorAll(".cal-edit-entry").forEach((btn) => {
+      btn.addEventListener("click", () => openLogForm(btn.dataset.id));
+    });
+
+    entriesEl.querySelectorAll(".cal-remove-piece").forEach((btn) => {
+      btn.addEventListener("click", () => removePieceFromEntry(btn.dataset.entry, btn.dataset.garment));
+    });
 
     entriesEl.querySelectorAll(".cal-delete-entry").forEach((btn) => {
       btn.addEventListener("click", () => removeEntry(btn.dataset.id));
     });
   }
 
+  async function removePieceFromEntry(entryId, garmentId) {
+    const entry = WORN_LOGS.find((w) => w.id === entryId);
+    if (!entry) return;
+
+    const newGarmentIds = entry.garmentIds.filter((id) => id !== garmentId);
+
+    try {
+      if (newGarmentIds.length) {
+        await updateWornLog(entryId, { garmentIds: newGarmentIds });
+        entry.garmentIds = newGarmentIds;
+      } else {
+        // that was the last piece in this entry, remove the whole day entry
+        await deleteWornLog(entryId);
+        WORN_LOGS = WORN_LOGS.filter((w) => w.id !== entryId);
+      }
+
+      const g = byId(garmentId);
+      if (g) {
+        const newTimesWorn = Math.max(0, g.timesWorn - 1);
+        const remainingDates = WORN_LOGS.filter((w) => w.garmentIds.includes(garmentId)).map((w) => w.date).sort();
+        const newLastWorn = remainingDates.length ? remainingDates[remainingDates.length - 1] : "";
+        await updateGarment(garmentId, { timesWorn: newTimesWorn, lastWorn: newLastWorn });
+        g.timesWorn = newTimesWorn;
+        g.lastWorn = newLastWorn;
+      }
+
+      renderCalendar();
+      renderSelectedDay();
+      renderStale();
+    } catch (error) {
+      alert("could not remove: " + error.message);
+    }
+  }
+
   async function removeEntry(id) {
     const entry = WORN_LOGS.find((w) => w.id === id);
     if (!entry) return;
-    if (!window.confirm("Remove this logged outfit? This will lower the wear count on its pieces.")) return;
+    if (!window.confirm("Remove all pieces logged for this day? This will lower the wear count on each of them. To remove just one piece, use its \u00d7 instead.")) return;
 
     try {
       await deleteWornLog(id);
@@ -211,31 +267,56 @@
     list.outerHTML = `<dl class="kv-list" id="cal-stale-list">${list.innerHTML}</dl>`;
   }
 
-  function openLogForm() {
+  const SLOTS = [
+    { key: "top", label: "Top", category: "top", allowNone: true },
+    { key: "outer", label: "Outerwear", category: "outer", allowNone: true },
+    { key: "bottom", label: "Bottom", category: "bottom", allowNone: true },
+    { key: "dress", label: "Dress (instead of top/bottom)", category: "dress", allowNone: true },
+    { key: "shoe", label: "Shoes", category: "shoe", allowNone: true },
+    { key: "accessory", label: "Accessory", category: "accessory", allowNone: true }
+  ];
+
+  function slotOptionsMarkup(slotKey, category, editing) {
+    const items = WARDROBE.filter((g) => g.category === category);
+    const selectedId = editing ? editing.garmentIds.find((id) => { const g = byId(id); return g && g.category === category; }) : null;
+    if (!items.length) return `<option value="">None available in this category</option>`;
+    return (
+      `<option value="">None</option>` +
+      items.map((g) => `<option value="${g.id}"${g.id === selectedId ? " selected" : ""}>${g.name}</option>`).join("")
+    );
+  }
+
+  function openLogForm(entryId) {
     const slot = document.getElementById("cal-form-slot");
-    const dateVal = selectedDate || todayIso();
+    const editing = entryId ? WORN_LOGS.find((w) => w.id === entryId) : null;
+    const dateVal = editing ? editing.date : (selectedDate || todayIso());
 
     const outfitOptions = OUTFITS.map((o) => `<option value="${o.id}">${o.name || "Untitled Outfit"}</option>`).join("");
-    const garmentChecks = WARDROBE
-      .map((g) => `<label><input type="checkbox" name="cal-garment" value="${g.id}"> ${g.name}</label>`)
-      .join("");
+    const slotFields = SLOTS.map(
+      (s) => `
+        <div class="field-group">
+          <label for="cal-slot-${s.key}">${s.label}</label>
+          <select id="cal-slot-${s.key}">${slotOptionsMarkup(s.key, s.category, editing)}</select>
+        </div>
+      `
+    ).join("");
 
     slot.innerHTML = `
       <div class="edit-panel">
-        <h3>Log an Outfit</h3>
+        <h3>${editing ? "Edit Logged Outfit" : "Log an Outfit"}</h3>
         <div class="field-row">
           <div class="field-group"><label for="cal-date">Date</label><input type="date" id="cal-date" value="${dateVal}"></div>
           <div class="field-group"><label for="cal-outfit">Use a Saved Outfit (optional)</label>
             <select id="cal-outfit"><option value="">Build from scratch instead</option>${outfitOptions}</select>
           </div>
         </div>
-        <div class="field-group" id="cal-scratch-group">
-          <label>Or Pick Pieces From Scratch</label>
-          <div class="checkbox-set" id="cal-garments">${garmentChecks}</div>
+        <div id="cal-scratch-group">
+          <p class="lede" style="font-size:0.85rem; margin-bottom:0.6em">Pick a piece for each slot that applies. Leave any as "None" if it doesn't fit today's outfit.</p>
+          <div class="field-row">${slotFields}</div>
         </div>
-        <div class="field-group"><label for="cal-notes">Notes</label><textarea id="cal-notes" placeholder="occasion, weather, how it felt"></textarea></div>
+        <div class="field-group"><label for="cal-notes">Notes</label><textarea id="cal-notes" placeholder="occasion, weather, how it felt">${editing ? editing.notes || "" : ""}</textarea></div>
         <div style="display:flex; gap:0.6em">
-          <button type="button" class="btn primary" id="cal-save">Save</button>
+          <button type="button" class="btn primary" id="cal-save">${editing ? "Save Changes" : "Save"}</button>
           <button type="button" class="btn quiet" id="cal-cancel">Cancel</button>
         </div>
       </div>
@@ -244,15 +325,19 @@
 
     const outfitSelect = document.getElementById("cal-outfit");
     const scratchGroup = document.getElementById("cal-scratch-group");
+    if (editing && editing.outfitId) {
+      outfitSelect.value = editing.outfitId;
+      scratchGroup.style.display = "none";
+    }
     outfitSelect.addEventListener("change", () => {
       scratchGroup.style.display = outfitSelect.value ? "none" : "block";
     });
 
     document.getElementById("cal-cancel").addEventListener("click", () => { slot.innerHTML = ""; });
-    document.getElementById("cal-save").addEventListener("click", saveLogEntry);
+    document.getElementById("cal-save").addEventListener("click", () => saveLogEntry(entryId));
   }
 
-  async function saveLogEntry() {
+  async function saveLogEntry(entryId) {
     const date = document.getElementById("cal-date").value;
     if (!date) { alert("pick a date"); return; }
 
@@ -262,7 +347,9 @@
       const outfit = OUTFITS.find((o) => o.id === outfitId);
       garmentIds = outfit ? outfit.garmentIds : [];
     } else {
-      garmentIds = Array.from(document.querySelectorAll('input[name="cal-garment"]:checked')).map((el) => el.value);
+      garmentIds = SLOTS
+        .map((s) => document.getElementById(`cal-slot-${s.key}`).value)
+        .filter(Boolean);
     }
 
     if (!garmentIds.length) { alert("pick at least one piece, or a saved outfit"); return; }
@@ -272,16 +359,43 @@
     saveBtn.disabled = true;
     saveBtn.textContent = "saving…";
 
-    try {
-      const created = await createWornLog({ date, garmentIds, outfitId, notes });
-      WORN_LOGS.push({ id: created.objectId, date, garmentIds, outfitId, notes });
+    const editing = entryId ? WORN_LOGS.find((w) => w.id === entryId) : null;
+    const previousGarmentIds = editing ? editing.garmentIds : [];
 
-      for (const garmentId of garmentIds) {
+    try {
+      if (editing) {
+        await updateWornLog(entryId, { date, garmentIds, outfitId, notes });
+        editing.date = date;
+        editing.garmentIds = garmentIds;
+        editing.outfitId = outfitId;
+        editing.notes = notes;
+      } else {
+        const created = await createWornLog({ date, garmentIds, outfitId, notes });
+        WORN_LOGS.push({ id: created.objectId, date, garmentIds, outfitId, notes });
+      }
+
+      // adjust wear counts: pieces newly added get +1, pieces dropped from an edit get -1,
+      // pieces that were already there and still are stay untouched
+      const added = garmentIds.filter((id) => !previousGarmentIds.includes(id));
+      const removed = previousGarmentIds.filter((id) => !garmentIds.includes(id));
+
+      for (const garmentId of added) {
         const g = byId(garmentId);
         if (!g) continue;
         const newTimesWorn = (g.timesWorn || 0) + 1;
         const newLastWorn = !g.lastWorn || date > g.lastWorn ? date : g.lastWorn;
         await updateGarment(garmentId, { timesWorn: newTimesWorn, lastWorn: newLastWorn, wornInLastYear: true });
+        g.timesWorn = newTimesWorn;
+        g.lastWorn = newLastWorn;
+      }
+
+      for (const garmentId of removed) {
+        const g = byId(garmentId);
+        if (!g) continue;
+        const newTimesWorn = Math.max(0, (g.timesWorn || 0) - 1);
+        const remainingDates = WORN_LOGS.filter((w) => w.garmentIds.includes(garmentId)).map((w) => w.date).sort();
+        const newLastWorn = remainingDates.length ? remainingDates[remainingDates.length - 1] : "";
+        await updateGarment(garmentId, { timesWorn: newTimesWorn, lastWorn: newLastWorn });
         g.timesWorn = newTimesWorn;
         g.lastWorn = newLastWorn;
       }
@@ -318,7 +432,7 @@
       if (viewMonth > 11) { viewMonth = 0; viewYear += 1; }
       renderCalendar();
     });
-    document.getElementById("cal-log-btn").addEventListener("click", openLogForm);
+    document.getElementById("cal-log-btn").addEventListener("click", () => openLogForm());
   });
 </script>
 </body>

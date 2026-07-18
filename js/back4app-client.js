@@ -209,6 +209,7 @@ function deleteOutfit(id) { return deleteInClass('Outfit', id); }
 
 function fetchWornLogs() { return fetchClass('WornLog', '-date'); }
 function createWornLog(fields) { return createInClass('WornLog', fields); }
+function updateWornLog(id, fields) { return updateInClass('WornLog', id, fields); }
 function deleteWornLog(id) { return deleteInClass('WornLog', id); }
 
 /* singleton site config: one row holding the paper doll's character image */

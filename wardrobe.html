@@ -98,6 +98,14 @@
 
   resultCount.textContent = "Loading your wardrobe…";
 
+  const CATEGORY_ORDER = ["top", "outer", "dress", "bottom", "shoe", "accessory"];
+  function byCategoryThenName(a, b) {
+    const ca = CATEGORY_ORDER.indexOf(a.category);
+    const cb = CATEGORY_ORDER.indexOf(b.category);
+    if (ca !== cb) return ca - cb;
+    return a.name.localeCompare(b.name);
+  }
+
   function render() {
     const q = searchInput.value.trim().toLowerCase();
     const cat = categorySelect.value;
@@ -112,7 +120,7 @@
       if (season && !g.season.includes(season)) return false;
       if (activeTags.size && ![...activeTags].every((t) => g.tags.includes(t))) return false;
       return true;
-    });
+    }).sort(byCategoryThenName);
 
     grid.innerHTML = "";
     results.forEach((g) => grid.appendChild(garmentTile(g)));

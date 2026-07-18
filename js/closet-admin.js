@@ -176,7 +176,7 @@ async function handleSave(event) {
       loveRating: parseInt(document.querySelector('#f-love').value, 10) || 3,
       timesWorn: 0,
       wornInLastYear: false,
-      size: '',
+      size: document.querySelector('#f-size').value.trim(),
       link: '',
       care: { wash: document.querySelector('#f-wash').value, dry: document.querySelector('#f-dry').value },
       highendTier: document.querySelector('#f-tier').value,
