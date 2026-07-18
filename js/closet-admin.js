@@ -154,16 +154,7 @@ async function handleSave(event) {
 
   try {
     // 1. upload the photo to back4app's file storage
-    var safeFilename = Date.now() + '_' + selectedFile.name.replace(/[^a-z0-9.\-_]/gi, '_');
-    var uploadResponse = await fetch(B4A_URL + '/files/' + safeFilename, {
-      method: 'POST',
-      headers: b4aHeaders({ 'Content-Type': selectedFile.type }),
-      body: selectedFile
-    });
-    var uploadedFile = await uploadResponse.json();
-    if (!uploadResponse.ok || !uploadedFile.url) {
-      throw new Error(uploadedFile.error || 'photo upload failed');
-    }
+    var uploadedFile = await uploadGarmentPhoto(selectedFile);
 
     // 2. create the garment record, pointing "photo" at the uploaded file
     var garment = {

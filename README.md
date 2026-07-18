@@ -89,6 +89,15 @@ yourself. Five tabs:
 **A note on the login:** a shared single-password check, not a full
 per-user account system, appropriate for a tool only you will ever use.
 
+**A note on photo uploads:** Back4App's free tier only allows file uploads
+from a logged-in Parse User, not from a plain Client Key request. Rather
+than require a paid plan, this site logs in as one small dedicated
+`wardrobe-closet-uploader` service user behind the scenes right before any
+upload, just to satisfy that requirement. It's created automatically the
+first time you upload a photo, character image, or illustration. Nothing
+else reads or writes as this user. Same approach used in the open:grounds
+blog admin.
+
 **A note on permissions:** open CLPs mean anyone with your Client Key and
 class names could technically write to your data too, the login only gates
 the admin page, not the Back4App API itself. Acceptable for a single-user

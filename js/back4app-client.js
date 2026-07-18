@@ -34,6 +34,55 @@ function b4aHeaders(extra) {
   );
 }
 
+// ---- file upload workaround ----
+// Back4App's free tier only allows file uploads from a logged-in Parse
+// User (public/anonymous uploads are off unless you're on a paid plan
+// with Custom Parse Server Options). Rather than require that upgrade,
+// this logs in as one small dedicated "service" Parse User right before
+// an upload, just to satisfy that "must be an authenticated user"
+// requirement. Nothing else reads or writes as this user, and it's
+// created automatically the first time anyone uploads a photo. Same
+// trick already used in the open:grounds blog admin.
+var UPLOADER_USERNAME = 'wardrobe-closet-uploader';
+var UPLOADER_PASSWORD = '7f2b9e4d61ac8830f5de1279b6c40aa9';
+var uploaderSessionToken = null;
+
+async function ensureUploaderSession() {
+  if (uploaderSessionToken) return uploaderSessionToken;
+
+  var authHeaders = b4aHeaders({ 'Content-Type': 'application/json' });
+
+  // try logging in first
+  var loginRes = await fetch(
+    B4A_URL + '/login?username=' + encodeURIComponent(UPLOADER_USERNAME) + '&password=' + encodeURIComponent(UPLOADER_PASSWORD),
+    { headers: authHeaders }
+  );
+  if (loginRes.ok) {
+    var loginData = await loginRes.json();
+    uploaderSessionToken = loginData.sessionToken;
+    return uploaderSessionToken;
+  }
+
+  // doesn't exist yet, create it once (first upload ever)
+  var signupRes = await fetch(B4A_URL + '/users', {
+    method: 'POST',
+    headers: authHeaders,
+    body: JSON.stringify({ username: UPLOADER_USERNAME, password: UPLOADER_PASSWORD })
+  });
+  if (signupRes.ok) {
+    var signupData = await signupRes.json();
+    uploaderSessionToken = signupData.sessionToken;
+    return uploaderSessionToken;
+  }
+
+  var msg = 'could not start an upload session';
+  try {
+    var errData = await signupRes.json();
+    if (errData && errData.error) msg = errData.error;
+  } catch (parseError) { /* response wasn't json */ }
+  throw new Error(msg);
+}
+
 /* ---------------- garments CRUD ---------------- */
 
 async function fetchGarments() {
@@ -169,10 +218,14 @@ async function saveSiteConfig(objectId, fields) {
 }
 
 async function uploadFile(file, prefix) {
+  var token = await ensureUploaderSession();
   var safeFilename = (prefix || '') + Date.now() + '_' + file.name.replace(/[^a-z0-9.\-_]/gi, '_');
   var res = await fetch(B4A_URL + '/files/' + safeFilename, {
     method: 'POST',
-    headers: b4aHeaders({ 'Content-Type': file.type }),
+    headers: b4aHeaders({
+      'Content-Type': file.type || 'application/octet-stream',
+      'X-Parse-Session-Token': token
+    }),
     body: file
   });
   var data = await res.json();

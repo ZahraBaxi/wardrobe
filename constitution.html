@@ -186,18 +186,20 @@
     tocLink.innerHTML = `<span class="toc-num">${ROMAN[i]}</span> ${a.title}`;
     toc.appendChild(tocLink);
 
-    const details = document.createElement("details");
-    details.className = "const-article";
-    details.id = id;
-    details.innerHTML = `
-      <summary>
+    const article = document.createElement("article");
+    article.className = "const-article";
+    article.id = id;
+    article.innerHTML = `
+      <div class="const-article-head">
         <span class="article-num">Article ${ROMAN[i]}</span>
-        <span class="article-title">${a.title}</span>
-        <span class="chevron">&#9662;</span>
-      </summary>
-      <div class="const-article-body">${a.html}</div>
+        <h2 class="article-title">${a.title}</h2>
+      </div>
+      <div class="const-article-body">
+        <p class="const-pullquote">${a.tenet}</p>
+        ${a.html}
+      </div>
     `;
-    articlesEl.insertBefore(details, closing);
+    articlesEl.insertBefore(article, closing);
   });
 
   // scroll progress
@@ -208,29 +210,31 @@
     progress.style.width = pct + "%";
   });
 
-  // highlight active toc entry
+  // fade each article in as it scrolls into view, and highlight its toc entry
   const tocLinks = [...toc.querySelectorAll("a")];
-  const detailsEls = [...articlesEl.querySelectorAll(".const-article")];
+  const articleEls = [...articlesEl.querySelectorAll(".const-article")];
   const observer = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
-        const link = toc.querySelector(`a[href="#${entry.target.id}"]`);
-        if (!link) return;
         if (entry.isIntersecting) {
-          tocLinks.forEach((l) => l.classList.remove("active"));
-          link.classList.add("active");
+          entry.target.classList.add("in-view");
+          const link = toc.querySelector(`a[href="#${entry.target.id}"]`);
+          if (link) {
+            tocLinks.forEach((l) => l.classList.remove("active"));
+            link.classList.add("active");
+          }
         }
       });
     },
-    { rootMargin: "-20% 0px -70% 0px" }
+    { rootMargin: "-10% 0px -60% 0px", threshold: 0.05 }
   );
-  detailsEls.forEach((d) => observer.observe(d));
+  articleEls.forEach((el) => observer.observe(el));
 
   toc.addEventListener("click", (e) => {
     const a = e.target.closest("a");
     if (!a) return;
-    const target = document.querySelector(a.getAttribute("href"));
-    if (target) target.open = true;
+    e.preventDefault();
+    document.querySelector(a.getAttribute("href"))?.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 
   // draw a tenet
@@ -244,8 +248,9 @@
         <a href="#article-${i + 1}" class="btn quiet" style="margin-top:0.8em" id="tenet-jump">Read Article ${ROMAN[i]} &rarr;</a>
       </div>
     `;
-    document.getElementById("tenet-jump").addEventListener("click", () => {
-      document.getElementById(`article-${i + 1}`).open = true;
+    document.getElementById("tenet-jump").addEventListener("click", (e) => {
+      e.preventDefault();
+      document.getElementById(`article-${i + 1}`).scrollIntoView({ behavior: "smooth", block: "start" });
     });
   });
 </script>
