@@ -51,20 +51,30 @@
 </footer>
 
 <script src="js/data.js"></script>
+<script src="js/back4app-client.js"></script>
+<script src="js/wardrobe-loader.js"></script>
 <script src="js/app.js"></script>
 <script>
   const notes = document.getElementById("notes");
-  const sorted = [...FIELD_NOTES].sort((a, b) => new Date(b.date) - new Date(a.date));
-  notes.innerHTML = sorted
-    .map(
-      (n) => `
-      <div class="note-entry">
-        <div class="note-date">${formatDate(n.date)}</div>
-        <div class="note-body">${n.body}</div>
-        <div class="note-tags tag-row">${n.tags.map((t) => `<span class="tag">${t}</span>`).join("")}</div>
-      </div>`
-    )
-    .join("");
+  notes.innerHTML = `<div class="empty-state">Loading…</div>`;
+
+  siteDataReady.then(() => {
+    if (!FIELD_NOTES.length) {
+      notes.innerHTML = `<div class="empty-state">No entries yet, add the first one in Closet Admin.</div>`;
+      return;
+    }
+    const sorted = [...FIELD_NOTES].sort((a, b) => new Date(b.date) - new Date(a.date));
+    notes.innerHTML = sorted
+      .map(
+        (n) => `
+        <div class="note-entry">
+          <div class="note-date">${formatDate(n.date)}</div>
+          <div class="note-body">${n.body}</div>
+          <div class="note-tags tag-row">${n.tags.map((t) => `<span class="tag">${t}</span>`).join("")}</div>
+        </div>`
+      )
+      .join("");
+  });
 </script>
 </body>
 </html>

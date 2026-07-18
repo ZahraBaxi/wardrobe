@@ -67,6 +67,15 @@ async function reloadGrid() {
   refreshDatalists();
 }
 
+var GRID_CATEGORY_ORDER = ['top', 'outer', 'dress', 'bottom', 'shoe', 'accessory'];
+
+function byCategoryThenNameG(a, b) {
+  var ca = GRID_CATEGORY_ORDER.indexOf(a.category);
+  var cb = GRID_CATEGORY_ORDER.indexOf(b.category);
+  if (ca !== cb) return ca - cb;
+  return a.name.localeCompare(b.name);
+}
+
 function currentSetRows() {
   return gridRows.filter(function (g) { return gridSet === 'active' ? g.keep : !g.keep; });
 }
@@ -81,7 +90,7 @@ function renderGrid() {
     if (!search) return true;
     var hay = [g.name, g.brand, g.color, g.material].join(' ').toLowerCase();
     return hay.indexOf(search) !== -1;
-  });
+  }).sort(byCategoryThenNameG);
 
   document.querySelector('#m-count').textContent = filtered.length + ' of ' + currentSetRows().length + ' item' + (currentSetRows().length === 1 ? '' : 's');
 
@@ -90,7 +99,16 @@ function renderGrid() {
     return;
   }
 
-  body.innerHTML = filtered.map(rowMarkup).join('');
+  var rowsHtml = '';
+  var lastCategory = null;
+  filtered.forEach(function (g) {
+    if (g.category !== lastCategory) {
+      lastCategory = g.category;
+      rowsHtml += '<tr class="grid-group-row"><td colspan="8">' + escHtmlG(g.category) + '</td></tr>';
+    }
+    rowsHtml += rowMarkup(g);
+  });
+  body.innerHTML = rowsHtml;
   wireRow(body);
 
   if (expandedId) {
@@ -111,7 +129,7 @@ function rowMarkup(g) {
         photoCell +
       '</td>' +
       editableCell('name', g.name, null, 'Name') +
-      editableCell('category', g.category, null, 'Category', 'dl-category') +
+      categoryCellMarkup(g) +
       editableCell('brand', g.brand, null, 'Brand', 'dl-brand') +
       colorCellMarkup(g) +
       editableCell('loveRating', g.loveRating, 'number', 'Love') +
@@ -140,6 +158,73 @@ function colorCellMarkup(g) {
     '<input type="text" list="dl-color" value="' + escHtmlG(g.color || '') + '" style="display:none">' +
     '<input type="color" class="swatch-input" value="' + escHtmlG(swatch) + '" style="display:none">' +
   '</td>';
+}
+
+function categoryCellMarkup(g) {
+  return '<td class="cell-editable cell-category-pill" data-field="category" data-label="Category">' +
+    '<button type="button" class="category-pill">' + escHtmlG(g.category || 'top') + ' <span class="pill-caret">\u25BE</span></button>' +
+  '</td>';
+}
+
+function allKnownCategoriesG() {
+  var set = {};
+  CATEGORY_OPTIONS_G.forEach(function (c) { set[c] = true; });
+  gridRows.forEach(function (g) { if (g.category) set[g.category] = true; });
+  return Object.keys(set).sort();
+}
+
+function closeCategoryPicker() {
+  var existing = document.querySelector('.category-picker-panel');
+  if (existing) existing.remove();
+  if (window._categoryPickerOutsideHandler) {
+    document.removeEventListener('click', window._categoryPickerOutsideHandler);
+    window._categoryPickerOutsideHandler = null;
+  }
+}
+
+function openCategoryPicker(btn, g, row) {
+  closeCategoryPicker();
+  var td = btn.closest('td');
+
+  var panel = document.createElement('div');
+  panel.className = 'category-picker-panel';
+  var options = allKnownCategoriesG();
+  panel.innerHTML =
+    '<input type="text" placeholder="type a new category">' +
+    '<div class="category-picker-options">' +
+      options.map(function (c) {
+        return '<button type="button" data-value="' + escHtmlG(c) + '"' + (c === g.category ? ' class="active"' : '') + '>' + escHtmlG(c) + '</button>';
+      }).join('') +
+    '</div>';
+  td.appendChild(panel);
+
+  var input = panel.querySelector('input');
+  input.focus();
+
+  function choose(value) {
+    if (!value) return;
+    btn.firstChild.nodeValue = value + ' ';
+    saveField(g.id, 'category', value, row).then(refreshDatalists).catch(function () {});
+    closeCategoryPicker();
+  }
+
+  panel.querySelectorAll('.category-picker-options button').forEach(function (optBtn) {
+    optBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      choose(optBtn.dataset.value);
+    });
+  });
+
+  input.addEventListener('click', function (e) { e.stopPropagation(); });
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); choose(input.value.trim()); }
+    if (e.key === 'Escape') closeCategoryPicker();
+  });
+
+  window._categoryPickerOutsideHandler = function (e) {
+    if (!panel.contains(e.target) && e.target !== btn) closeCategoryPicker();
+  };
+  setTimeout(function () { document.addEventListener('click', window._categoryPickerOutsideHandler); }, 0);
 }
 
 /* ---------------- combo datalists ---------------- */
@@ -222,6 +307,17 @@ function wireRow(body) {
     input.addEventListener('keydown', function (e) {
       if (e.key === 'Enter') input.blur();
       if (e.key === 'Escape') { input.value = input.defaultValue; input.blur(); }
+    });
+  });
+
+  // category pill picker
+  body.querySelectorAll('.category-pill').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var row = btn.closest('tr');
+      var id = row.dataset.id;
+      var g = gridRows.find(function (x) { return x.id === id; });
+      if (g) openCategoryPicker(btn, g, row);
     });
   });
 

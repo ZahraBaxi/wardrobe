@@ -260,6 +260,126 @@ function openWishEdit(id) {
   });
 }
 
+/* ---------------- FIELD NOTES ---------------- */
+
+var fieldNoteRows = [];
+var editingFieldNoteId = null;
+
+async function initFieldNotesTab() {
+  document.querySelector('#fn-add-new').addEventListener('click', function () { openFieldNoteEdit('new'); });
+  await reloadFieldNotesTab();
+}
+
+async function reloadFieldNotesTab() {
+  var list = document.querySelector('#fn-list');
+  list.innerHTML = '<div class="empty-state">loading…</div>';
+  try {
+    fieldNoteRows = (await fetchFieldNotes()).map(normalizeFieldNote);
+  } catch (error) {
+    list.innerHTML = '<div class="empty-state">could not load: ' + error.message + '</div>';
+    return;
+  }
+  renderFieldNotesList();
+}
+
+function renderFieldNotesList() {
+  var list = document.querySelector('#fn-list');
+  var sorted = fieldNoteRows.slice().sort(function (a, b) { return (b.date || '').localeCompare(a.date || ''); });
+
+  if (!sorted.length) {
+    list.innerHTML = '<div class="empty-state">no entries yet.</div>';
+    return;
+  }
+
+  list.innerHTML = sorted
+    .map(function (n) {
+      var preview = (n.body || '').slice(0, 60) + ((n.body || '').length > 60 ? '…' : '');
+      return (
+        '<div class="manage-row" data-id="' + n.id + '" style="grid-template-columns: 110px 1fr auto">' +
+          '<span class="row-meta">' + escHtmlM(n.date) + '</span>' +
+          '<span class="row-name">' + escHtmlM(preview) + '</span>' +
+          '<span class="row-actions">' +
+            '<button type="button" class="edit-fn-btn">Edit</button>' +
+            '<button type="button" class="danger delete-fn-btn">Delete</button>' +
+          '</span>' +
+        '</div>'
+      );
+    })
+    .join('');
+
+  list.querySelectorAll('.edit-fn-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () { openFieldNoteEdit(btn.closest('.manage-row').dataset.id); });
+  });
+  list.querySelectorAll('.delete-fn-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = btn.closest('.manage-row').dataset.id;
+      if (!window.confirm('Delete this field note?')) return;
+      deleteFieldNote(id).then(function () {
+        fieldNoteRows = fieldNoteRows.filter(function (x) { return x.id !== id; });
+        renderFieldNotesList();
+        showToast('deleted');
+      }).catch(function (err) { showToast('delete failed: ' + err.message); });
+    });
+  });
+}
+
+function todayIsoG() {
+  var t = new Date();
+  return t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
+}
+
+function openFieldNoteEdit(id) {
+  editingFieldNoteId = id;
+  var n = id === 'new'
+    ? { date: todayIsoG(), body: '', tags: [] }
+    : fieldNoteRows.find(function (x) { return x.id === id; });
+  if (!n) return;
+
+  var slot = document.querySelector('#fn-edit-slot');
+  slot.innerHTML =
+    '<div class="edit-panel">' +
+      '<h3>' + (id === 'new' ? 'Add Field Note' : 'Edit Field Note') + '</h3>' +
+      '<div class="field-row">' +
+        '<div class="field-group"><label for="fn-date">Date</label><input type="date" id="fn-date" value="' + escHtmlM(n.date) + '"></div>' +
+        '<div class="field-group"><label for="fn-tags">Tags (comma separated)</label><input type="text" id="fn-tags" value="' + escHtmlM((n.tags || []).join(', ')) + '"></div>' +
+      '</div>' +
+      '<div class="field-group"><label for="fn-body">Entry</label><textarea id="fn-body" style="min-height:8em">' + escHtmlM(n.body) + '</textarea></div>' +
+      '<div style="display:flex; gap:0.6em">' +
+        '<button type="button" class="btn primary" id="fn-save">Save</button>' +
+        '<button type="button" class="btn quiet" id="fn-cancel">Cancel</button>' +
+      '</div>' +
+    '</div>';
+
+  slot.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  slot.querySelector('#fn-cancel').addEventListener('click', function () { editingFieldNoteId = null; slot.innerHTML = ''; });
+  slot.querySelector('#fn-save').addEventListener('click', async function () {
+    var fields = {
+      date: slot.querySelector('#fn-date').value,
+      body: slot.querySelector('#fn-body').value.trim(),
+      tags: slot.querySelector('#fn-tags').value.split(',').map(function (t) { return t.trim(); }).filter(Boolean)
+    };
+    if (!fields.body) { showToast('write something first'); return; }
+    try {
+      if (id === 'new') {
+        var created = await createFieldNote(fields);
+        fields.id = created.objectId;
+        fieldNoteRows.push(fields);
+      } else {
+        await updateFieldNote(id, fields);
+        var idx = fieldNoteRows.findIndex(function (x) { return x.id === id; });
+        if (idx !== -1) fieldNoteRows[idx] = Object.assign({ id: id }, fields);
+      }
+      editingFieldNoteId = null;
+      slot.innerHTML = '';
+      renderFieldNotesList();
+      showToast('saved');
+    } catch (error) {
+      showToast('save failed: ' + error.message);
+    }
+  });
+}
+
 /* ---------------- PAPER DOLL ---------------- */
 
 var dollConfig = null;
@@ -422,10 +542,11 @@ document.addEventListener('DOMContentLoaded', function () {
     manage: { btn: document.querySelector('#tab-manage'), pane: document.querySelector('#pane-manage'), title: 'Manage Wardrobe' },
     repairs: { btn: document.querySelector('#tab-repairs'), pane: document.querySelector('#pane-repairs'), title: 'Repairs' },
     wishlist: { btn: document.querySelector('#tab-wishlist'), pane: document.querySelector('#pane-wishlist'), title: 'Wishlist' },
+    fieldnotes: { btn: document.querySelector('#tab-fieldnotes'), pane: document.querySelector('#pane-fieldnotes'), title: 'Field Notes' },
     doll: { btn: document.querySelector('#tab-doll'), pane: document.querySelector('#pane-doll'), title: 'Paper Doll' },
     add: { btn: document.querySelector('#tab-add'), pane: document.querySelector('#pane-add'), title: 'Add via Photo' }
   };
-  var initialized = { repairs: false, wishlist: false, doll: false };
+  var initialized = { repairs: false, wishlist: false, fieldnotes: false, doll: false };
   var title = document.querySelector('#admin-title');
 
   function activate(key) {
@@ -437,6 +558,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (key === 'repairs' && !initialized.repairs) { initialized.repairs = true; initRepairsTab(); }
     if (key === 'wishlist' && !initialized.wishlist) { initialized.wishlist = true; initWishlistTab(); }
+    if (key === 'fieldnotes' && !initialized.fieldnotes) { initialized.fieldnotes = true; initFieldNotesTab(); }
     if (key === 'doll' && !initialized.doll) { initialized.doll = true; initDollTab(); }
   }
 

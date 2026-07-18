@@ -1,10 +1,10 @@
 /* ==========================================================================
    Non-garment static data.
 
-   Garments, repairs, wishlist items, and loved outfits now all live in
-   Back4App (see js/back4app-client.js and js/wardrobe-loader.js), and are
-   editable from Closet Admin. UNIFORMS and FIELD_NOTES are still static
-   here for now, edit this file directly for those, or ask to have them
+   Garments, repairs, wishlist items, loved outfits, worn logs, and field
+   notes all live in Back4App now (see js/back4app-client.js and
+   js/wardrobe-loader.js), and are editable from Closet Admin. UNIFORMS is
+   still static here, edit this file directly for that, or ask to have it
    moved into Back4App too later.
    ========================================================================== */
 
@@ -52,5 +52,3 @@ const UNIFORMS = [
     packingList: ["1 soft layer", "1 base layer"]
   }
 ];
-
-const FIELD_NOTES = [];

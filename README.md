@@ -41,6 +41,7 @@ own app (App ID `rLyvaf4wL6oXTKqKyOXLLHjQJWBAU2aJqmOb08Pg`):
 - `WishlistItem`, potential replacements
 - `Outfit`, combinations you've loved and tested
 - `WornLog`, days you logged wearing something, drives last worn + cost per wear
+- `FieldNote`, journal entries for the Field Notes page
 - `SiteConfig`, one row holding the paper doll's character image
 
 Every public page fetches live, so an edit in Closet Admin shows up everywhere
@@ -76,7 +77,7 @@ yourself. Five tabs:
    If you ever rotate it, this is the one file to update, every page reads
    from it.
 3. **Open permissions.** Each class (`Garment`, `Repair`, `WishlistItem`,
-   `Outfit`, `WornLog`, `SiteConfig`) needs public Find, Get, Create, Update, and
+   `Outfit`, `WornLog`, `FieldNote`, `SiteConfig`) needs public Find, Get, Create, Update, and
    Delete enabled in the Back4App dashboard under that class's lock icon
    (CLPs). Classes are created automatically the first time something is
    saved to them, so do this right after your first save to each.

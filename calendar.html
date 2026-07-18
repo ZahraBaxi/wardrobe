@@ -166,6 +166,7 @@
                 .join("")}
             </div>
             ${entry.notes ? `<p style="font-size:0.85rem; margin:0.4em 0 0">${entry.notes}</p>` : ""}
+            ${entry.outfitId ? `<p style="font-size:0.78rem; margin:0.4em 0 0; color:var(--indigo)">&#9733; saved as a favorite outfit, <a href="outfits.html">view it</a></p>` : ""}
             <div style="display:flex; gap:0.5em; margin-top:0.5em">
               <button type="button" class="btn quiet cal-edit-entry" data-id="${entry.id}" style="font-size:0.7rem; padding:0.3em 0.7em">Edit</button>
               <button type="button" class="btn quiet cal-delete-entry" data-id="${entry.id}" style="font-size:0.7rem; padding:0.3em 0.7em">Remove Whole Day</button>
@@ -315,6 +316,24 @@
           <div class="field-row">${slotFields}</div>
         </div>
         <div class="field-group"><label for="cal-notes">Notes</label><textarea id="cal-notes" placeholder="occasion, weather, how it felt">${editing ? editing.notes || "" : ""}</textarea></div>
+        <div id="cal-fav-group">
+          ${
+            editing && editing.outfitId
+              ? `<p class="lede" style="font-size:0.85rem">Already linked to a favorite outfit. <a href="outfits.html">View your favorite outfits &rarr;</a></p>`
+              : `
+                <div class="field-group">
+                  <label class="chip-toggle" style="cursor:pointer">
+                    <input type="checkbox" id="cal-fav" style="accent-color:var(--indigo); margin-right:0.4em">
+                    also save this as a favorite outfit
+                  </label>
+                </div>
+                <div class="field-group" id="cal-fav-name-group" style="display:none">
+                  <label for="cal-fav-name">Favorite Outfit Name</label>
+                  <input type="text" id="cal-fav-name" placeholder="leave blank to auto-name it">
+                </div>
+              `
+          }
+        </div>
         <div style="display:flex; gap:0.6em">
           <button type="button" class="btn primary" id="cal-save">${editing ? "Save Changes" : "Save"}</button>
           <button type="button" class="btn quiet" id="cal-cancel">Cancel</button>
@@ -322,6 +341,13 @@
       </div>
     `;
     slot.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    const favCheckbox = document.getElementById("cal-fav");
+    if (favCheckbox) {
+      favCheckbox.addEventListener("change", () => {
+        document.getElementById("cal-fav-name-group").style.display = favCheckbox.checked ? "block" : "none";
+      });
+    }
 
     const outfitSelect = document.getElementById("cal-outfit");
     const scratchGroup = document.getElementById("cal-scratch-group");
@@ -331,6 +357,8 @@
     }
     outfitSelect.addEventListener("change", () => {
       scratchGroup.style.display = outfitSelect.value ? "none" : "block";
+      const favGroup = document.getElementById("cal-fav-group");
+      if (favGroup && !editing) favGroup.style.display = outfitSelect.value ? "none" : "block";
     });
 
     document.getElementById("cal-cancel").addEventListener("click", () => { slot.innerHTML = ""; });
@@ -362,16 +390,31 @@
     const editing = entryId ? WORN_LOGS.find((w) => w.id === entryId) : null;
     const previousGarmentIds = editing ? editing.garmentIds : [];
 
+    let finalOutfitId = outfitId;
+    const favCheckbox = document.getElementById("cal-fav");
+    if (favCheckbox && favCheckbox.checked && !finalOutfitId) {
+      const favNameInput = document.getElementById("cal-fav-name");
+      const fallbackName = garmentIds.map((id) => byId(id)?.name).filter(Boolean).slice(0, 2).join(" + ");
+      const favName = (favNameInput.value.trim() || fallbackName || "Loved Outfit");
+      try {
+        const createdOutfit = await createOutfit({ name: favName, garmentIds, occasion: "", notes: "", loveRating: 5 });
+        OUTFITS.push({ id: createdOutfit.objectId, name: favName, garmentIds, occasion: "", notes: "", loveRating: 5 });
+        finalOutfitId = createdOutfit.objectId;
+      } catch (error) {
+        alert("could not save as favorite outfit: " + error.message);
+      }
+    }
+
     try {
       if (editing) {
-        await updateWornLog(entryId, { date, garmentIds, outfitId, notes });
+        await updateWornLog(entryId, { date, garmentIds, outfitId: finalOutfitId, notes });
         editing.date = date;
         editing.garmentIds = garmentIds;
-        editing.outfitId = outfitId;
+        editing.outfitId = finalOutfitId;
         editing.notes = notes;
       } else {
-        const created = await createWornLog({ date, garmentIds, outfitId, notes });
-        WORN_LOGS.push({ id: created.objectId, date, garmentIds, outfitId, notes });
+        const created = await createWornLog({ date, garmentIds, outfitId: finalOutfitId, notes });
+        WORN_LOGS.push({ id: created.objectId, date, garmentIds, outfitId: finalOutfitId, notes });
       }
 
       // adjust wear counts: pieces newly added get +1, pieces dropped from an edit get -1,

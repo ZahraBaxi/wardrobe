@@ -212,6 +212,11 @@ function createWornLog(fields) { return createInClass('WornLog', fields); }
 function updateWornLog(id, fields) { return updateInClass('WornLog', id, fields); }
 function deleteWornLog(id) { return deleteInClass('WornLog', id); }
 
+function fetchFieldNotes() { return fetchClass('FieldNote', '-date'); }
+function createFieldNote(fields) { return createInClass('FieldNote', fields); }
+function updateFieldNote(id, fields) { return updateInClass('FieldNote', id, fields); }
+function deleteFieldNote(id) { return deleteInClass('FieldNote', id); }
+
 /* singleton site config: one row holding the paper doll's character image */
 async function fetchSiteConfig() {
   var rows = await fetchClass('SiteConfig');
@@ -292,6 +297,15 @@ function normalizeWornLog(row) {
     garmentIds: row.garmentIds || [],
     outfitId: row.outfitId || '',
     notes: row.notes || ''
+  };
+}
+
+function normalizeFieldNote(row) {
+  return {
+    id: row.objectId,
+    date: row.date || '',
+    body: row.body || '',
+    tags: row.tags || []
   };
 }
 
