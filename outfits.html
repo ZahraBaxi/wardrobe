@@ -62,8 +62,12 @@
           <p class="eyebrow">Article XII, Repetition</p>
           <h2>Loved &amp; Tested Outfits</h2>
         </div>
+        <button class="btn quiet" id="build-scratch-btn">+ Build an Outfit From Scratch</button>
       </div>
       <p class="lede" style="font-size:0.92rem">Combinations already worn and worth repeating. Not aspirational, proven.</p>
+
+      <div id="outfit-form-slot"></div>
+
       <div class="uniform-grid" id="loved-grid" style="margin-top:1.4em"></div>
     </div>
   </section>
@@ -89,15 +93,120 @@
 
   let currentOutfit = null;
 
+  const SLOTS = [
+    { key: "top", label: "Top", category: "top" },
+    { key: "outer", label: "Outerwear", category: "outer" },
+    { key: "bottom", label: "Bottom", category: "bottom" },
+    { key: "dress", label: "Dress (instead of top/bottom)", category: "dress" },
+    { key: "shoe", label: "Shoes", category: "shoe" },
+    { key: "accessory", label: "Accessory", category: "accessory" }
+  ];
+
   function refresh() {
     currentOutfit = generateOutfit();
     renderOutfit(display, currentOutfit);
     loveStatus.textContent = "";
   }
 
+  function slotOptionsMarkup(category, preselectedIds) {
+    const items = WARDROBE.filter((g) => g.category === category);
+    const selectedId = preselectedIds ? preselectedIds.find((id) => { const g = byId(id); return g && g.category === category; }) : null;
+    if (!items.length) return `<option value="">None available in this category</option>`;
+    return (
+      `<option value="">None</option>` +
+      items.map((g) => `<option value="${g.id}"${g.id === selectedId ? " selected" : ""}>${g.name}</option>`).join("")
+    );
+  }
+
+  // opens the shared build/edit form.
+  // existingOutfit: an Outfit record to edit, or null to create a new one
+  // prefillGarmentIds: garment ids to preselect when creating fresh from the randomizer
+  function openOutfitForm(existingOutfit, prefillGarmentIds) {
+    const slot = document.getElementById("outfit-form-slot");
+    const preselected = existingOutfit ? existingOutfit.garmentIds : (prefillGarmentIds || []);
+
+    const slotFields = SLOTS.map(
+      (s) => `
+        <div class="field-group">
+          <label for="of-slot-${s.key}">${s.label}</label>
+          <select id="of-slot-${s.key}">${slotOptionsMarkup(s.category, preselected)}</select>
+        </div>
+      `
+    ).join("");
+
+    slot.innerHTML = `
+      <div class="edit-panel">
+        <h3>${existingOutfit ? "Edit Outfit" : "Build an Outfit"}</h3>
+        <div class="field-row">
+          <div class="field-group"><label for="of-name">Name</label><input type="text" id="of-name" value="${existingOutfit ? escHtmlOF(existingOutfit.name) : ""}" placeholder="Rainy commute"></div>
+          <div class="field-group"><label for="of-occasion">Occasion</label><input type="text" id="of-occasion" value="${existingOutfit ? escHtmlOF(existingOutfit.occasion) : ""}" placeholder="work, weekend, travel"></div>
+        </div>
+        <p class="lede" style="font-size:0.85rem; margin-bottom:0.6em">Pick a piece for each slot that applies. Leave any as "None" if it doesn't fit.</p>
+        <div class="field-row">${slotFields}</div>
+        <div class="field-group"><label for="of-notes">Notes</label><textarea id="of-notes" placeholder="why it works, when to reach for it">${existingOutfit ? escHtmlOF(existingOutfit.notes) : ""}</textarea></div>
+        <div style="display:flex; gap:0.6em">
+          <button type="button" class="btn primary" id="of-save">${existingOutfit ? "Save Changes" : "Save Outfit"}</button>
+          <button type="button" class="btn quiet" id="of-cancel">Cancel</button>
+        </div>
+      </div>
+    `;
+    slot.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    document.getElementById("of-cancel").addEventListener("click", () => { slot.innerHTML = ""; });
+    document.getElementById("of-save").addEventListener("click", () => saveOutfitForm(existingOutfit));
+  }
+
+  function escHtmlOF(value) {
+    const replacements = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+    return String(value == null ? "" : value).replace(/[&<>"']/g, (c) => replacements[c]);
+  }
+
+  async function saveOutfitForm(existingOutfit) {
+    const name = document.getElementById("of-name").value.trim();
+    const occasion = document.getElementById("of-occasion").value.trim();
+    const notes = document.getElementById("of-notes").value.trim();
+    const garmentIds = SLOTS.map((s) => document.getElementById(`of-slot-${s.key}`).value).filter(Boolean);
+
+    if (!garmentIds.length) { alert("pick at least one piece"); return; }
+
+    const saveBtn = document.getElementById("of-save");
+    saveBtn.disabled = true;
+    saveBtn.textContent = "saving…";
+
+    const fallbackName = garmentIds.map((id) => byId(id)?.name).filter(Boolean).slice(0, 2).join(" + ");
+    const fields = { name: name || fallbackName || "Untitled Outfit", occasion, notes, garmentIds };
+
+    try {
+      if (existingOutfit) {
+        await updateOutfit(existingOutfit.id, fields);
+        Object.assign(existingOutfit, fields);
+      } else {
+        const created = await createOutfit(Object.assign({ loveRating: 5 }, fields));
+        OUTFITS.push(Object.assign({ id: created.objectId, loveRating: 5 }, fields));
+      }
+      document.getElementById("outfit-form-slot").innerHTML = "";
+      renderLoved();
+    } catch (error) {
+      alert("could not save: " + error.message);
+      saveBtn.disabled = false;
+      saveBtn.textContent = existingOutfit ? "Save Changes" : "Save Outfit";
+    }
+  }
+
+  async function deleteOutfitCard(outfit) {
+    if (!window.confirm(`Remove "${outfit.name || "this outfit"}" from your loved outfits?`)) return;
+    try {
+      await deleteOutfit(outfit.id);
+      OUTFITS = OUTFITS.filter((o) => o.id !== outfit.id);
+      renderLoved();
+    } catch (error) {
+      alert("could not delete: " + error.message);
+    }
+  }
+
   function renderLoved() {
     if (!OUTFITS.length) {
-      lovedGrid.innerHTML = `<div class="empty-state">No loved outfits saved yet, generate one above and click "Love This Outfit".</div>`;
+      lovedGrid.innerHTML = `<div class="empty-state">No loved outfits saved yet, generate one above and click "Love This Outfit", or build one from scratch.</div>`;
       return;
     }
     lovedGrid.innerHTML = "";
@@ -112,7 +221,13 @@
           ${garments.map((g) => `<a class="tag" href="item.html?id=${g.id}">${g.name}</a>`).join("")}
         </div>
         <p style="font-size:0.85rem">${o.notes || ""}</p>
+        <div style="display:flex; gap:0.5em; margin-top:0.8em">
+          <button type="button" class="btn quiet of-edit-btn" style="font-size:0.7rem; padding:0.3em 0.7em">Edit</button>
+          <button type="button" class="btn quiet of-delete-btn" style="font-size:0.7rem; padding:0.3em 0.7em; color:var(--rust)">Delete</button>
+        </div>
       `;
+      card.querySelector(".of-edit-btn").addEventListener("click", () => openOutfitForm(o));
+      card.querySelector(".of-delete-btn").addEventListener("click", () => deleteOutfitCard(o));
       lovedGrid.appendChild(card);
     });
   }
@@ -121,27 +236,13 @@
     refresh();
     renderLoved();
     document.getElementById("randomize-btn").addEventListener("click", refresh);
+    document.getElementById("build-scratch-btn").addEventListener("click", () => openOutfitForm(null));
 
-    document.getElementById("love-btn").addEventListener("click", async () => {
+    document.getElementById("love-btn").addEventListener("click", () => {
       if (!currentOutfit) return;
       const garmentIds = Object.values(currentOutfit).filter(Boolean).map((g) => g.id);
       if (!garmentIds.length) return;
-      loveStatus.textContent = "saving…";
-      try {
-        const name = garmentIds.map((id) => byId(id)?.name).filter(Boolean).slice(0, 2).join(" + ");
-        const created = await createOutfit({
-          name: name || "Loved Outfit",
-          garmentIds: garmentIds,
-          occasion: "",
-          notes: "",
-          loveRating: 5
-        });
-        OUTFITS.push({ id: created.objectId, name, garmentIds, occasion: "", notes: "", loveRating: 5 });
-        renderLoved();
-        loveStatus.textContent = "saved to loved outfits";
-      } catch (error) {
-        loveStatus.textContent = "could not save: " + error.message;
-      }
+      openOutfitForm(null, garmentIds);
     });
   });
 </script>
