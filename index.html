@@ -37,7 +37,7 @@
       <div>
         <p class="eyebrow">Specimen No. 01, Est. ongoing</p>
         <h1>My Wardrobe</h1>
-        <p class="lede">A collection built slowly through craftsmanship, repair, and intentional design. Click any piece on the figure to see its details.</p>
+        <p class="lede">A collection built slowly through craftsmanship, repair, and intentional design. Try on a look below by picking pieces and layering them.</p>
         <div class="cta-row">
           <a class="btn primary" href="wardrobe.html">Browse the Collection</a>
           <a class="btn" href="outfits.html">Random Outfit</a>
@@ -57,17 +57,16 @@
       <div class="section-head">
         <div>
           <p class="eyebrow">Paper Doll</p>
-          <h2>Click a Piece</h2>
+          <h2>Try On a Look</h2>
         </div>
       </div>
+      <p class="lede" style="font-size:0.92rem">Check the pieces you want to see together, then drag one by its handle to change what layers on top.</p>
 
       <div id="doll-wrap">
         <div class="paper-doll-stage" id="doll-stage">
           <div class="empty-state" id="doll-empty">Loading…</div>
         </div>
-        <div class="doll-detail" id="doll-detail">
-          <p class="lede" style="font-size:0.9rem">Click a piece on the figure to see it here.</p>
-        </div>
+        <div class="doll-picker" id="doll-picker"></div>
       </div>
       <p class="doll-caption" id="doll-caption"></p>
     </div>
@@ -121,55 +120,136 @@
 <script>
   const stage = document.getElementById("doll-stage");
   const emptyState = document.getElementById("doll-empty");
-  const detail = document.getElementById("doll-detail");
+  const picker = document.getElementById("doll-picker");
+  const caption = document.getElementById("doll-caption");
 
-  function showDetail(g) {
-    detail.innerHTML = `
-      <div class="tag-row">${g.tags.slice(0, 4).map((t) => `<span class="tag">${t}</span>`).join("")}</div>
-      <h3 style="margin-top:0.5em">${g.name}</h3>
-      <table class="spec-table" style="margin-top:0.6em">
-        <tr><td>Brand</td><td>${g.brand || "Unknown"}</td></tr>
-        <tr><td>Color</td><td>${g.color || "Unknown"}</td></tr>
-        <tr><td>Material</td><td>${g.material || "Unknown"}</td></tr>
-        <tr><td>Love Rating</td><td class="love-rating">${loveStars(g.loveRating)}</td></tr>
-      </table>
-      <a class="btn quiet" style="margin-top:0.8em" href="item.html?id=${g.id}">Full Details &rarr;</a>
-    `;
+  let pieceOrder = []; // garment ids, index 0 = frontmost layer
+  let selectedIds = new Set();
+
+  function computeZ(id) {
+    const idx = pieceOrder.indexOf(id);
+    return pieceOrder.length - idx;
+  }
+
+  function renderStage() {
+    stage.querySelectorAll(".doll-piece").forEach((el) => el.remove());
+
+    pieceOrder.forEach((id) => {
+      if (!selectedIds.has(id)) return;
+      const g = byId(id);
+      if (!g || !g.illustration) return;
+      const img = document.createElement("img");
+      img.src = g.illustration.url;
+      img.alt = g.name;
+      img.className = "doll-piece";
+      img.style.left = g.dollX + "%";
+      img.style.top = g.dollY + "%";
+      img.style.width = g.dollWidth + "%";
+      img.style.zIndex = computeZ(id);
+      stage.appendChild(img);
+    });
+
+    caption.textContent = selectedIds.size ? "" : "Pick pieces below to build a look.";
+  }
+
+  function wireDragHandle(row) {
+    const handle = row.querySelector(".doll-drag-handle");
+    let dragging = false;
+
+    handle.addEventListener("pointerdown", (e) => {
+      dragging = true;
+      handle.setPointerCapture(e.pointerId);
+      row.classList.add("dragging");
+    });
+
+    handle.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+      const rows = Array.from(picker.querySelectorAll(".doll-picker-row"));
+      const target = rows.find((r) => {
+        if (r === row) return false;
+        const rect = r.getBoundingClientRect();
+        return e.clientY >= rect.top && e.clientY <= rect.bottom;
+      });
+      if (target) {
+        const targetRect = target.getBoundingClientRect();
+        const before = e.clientY < targetRect.top + targetRect.height / 2;
+        picker.insertBefore(row, before ? target : target.nextSibling);
+      }
+    });
+
+    handle.addEventListener("pointerup", () => {
+      if (!dragging) return;
+      dragging = false;
+      row.classList.remove("dragging");
+      pieceOrder = Array.from(picker.querySelectorAll(".doll-picker-row")).map((r) => r.dataset.id);
+      renderStage();
+    });
+  }
+
+  function renderPicker() {
+    if (!pieceOrder.length) {
+      picker.innerHTML = `<p class="lede" style="font-size:0.88rem">No illustrated pieces yet. Add them in Closet Admin &rarr; Paper Doll.</p>`;
+      return;
+    }
+
+    picker.innerHTML =
+      `<div class="doll-picker-toolbar">
+        <button type="button" id="doll-pick-all">select all</button>
+        <button type="button" id="doll-pick-none">clear</button>
+      </div>` +
+      pieceOrder
+        .map((id) => {
+          const g = byId(id);
+          return `
+            <div class="doll-picker-row" data-id="${id}">
+              <span class="doll-drag-handle" title="drag to reorder">&#9776;</span>
+              <img class="doll-picker-thumb" src="${g.illustration.url}" alt="">
+              <label class="doll-picker-label">
+                <input type="checkbox" class="doll-picker-check"${selectedIds.has(id) ? " checked" : ""}>
+                ${g.name}
+              </label>
+            </div>
+          `;
+        })
+        .join("");
+
+    picker.querySelectorAll(".doll-picker-row").forEach((row) => {
+      wireDragHandle(row);
+      row.querySelector(".doll-picker-check").addEventListener("change", (e) => {
+        const id = row.dataset.id;
+        if (e.target.checked) selectedIds.add(id);
+        else selectedIds.delete(id);
+        renderStage();
+      });
+    });
+
+    document.getElementById("doll-pick-all").addEventListener("click", () => {
+      selectedIds = new Set(pieceOrder);
+      renderPicker();
+      renderStage();
+    });
+    document.getElementById("doll-pick-none").addEventListener("click", () => {
+      selectedIds = new Set();
+      renderPicker();
+      renderStage();
+    });
   }
 
   siteDataReady.then(() => {
     if (!SITE_CONFIG || !SITE_CONFIG.characterImage) {
       emptyState.innerHTML = `No character image yet. Upload one in Closet Admin &rarr; Paper Doll.`;
+      picker.innerHTML = "";
       return;
     }
 
     stage.style.backgroundImage = `url(${SITE_CONFIG.characterImage.url})`;
     emptyState.remove();
 
-    const dressed = WARDROBE.filter((g) => g.illustration && g.dollX != null && g.dollY != null);
+    const dollReady = WARDROBE.filter((g) => g.illustration && g.dollX != null && g.dollY != null);
+    pieceOrder = dollReady.sort((a, b) => b.dollZ - a.dollZ).map((g) => g.id);
 
-    if (!dressed.length) {
-      document.getElementById("doll-caption").textContent = "No pieces placed yet. Add illustrations and positions in Closet Admin \u2192 Paper Doll.";
-    }
-
-    dressed
-      .sort((a, b) => a.dollZ - b.dollZ)
-      .forEach((g) => {
-        const img = document.createElement("img");
-        img.src = g.illustration.url;
-        img.alt = g.name;
-        img.className = "doll-piece";
-        img.style.left = g.dollX + "%";
-        img.style.top = g.dollY + "%";
-        img.style.width = g.dollWidth + "%";
-        img.style.zIndex = g.dollZ;
-        img.addEventListener("click", () => {
-          document.querySelectorAll(".doll-piece").forEach((p) => p.classList.remove("active"));
-          img.classList.add("active");
-          showDetail(g);
-        });
-        stage.appendChild(img);
-      });
+    renderPicker();
+    renderStage();
   });
 </script>
 </body>

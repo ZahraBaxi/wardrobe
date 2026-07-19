@@ -133,8 +133,13 @@ Back4App over `fetch()`.
   so it never produces impossible combinations like two bottoms. Click
   "Love This Outfit" to save it to the loved outfits gallery below.
 - The home page paper doll starts empty until you add a character image and
-  at least one garment illustration in Closet Admin, Paper Doll. Clicking a
-  placed piece shows its details right there on the page.
+  at least one garment illustration in Closet Admin, Paper Doll. Visitors
+  pick which pieces to layer on with checkboxes and drag them by the handle
+  to change the stacking order, nothing is clickable on the figure itself
+  since illustrations are typically full-size overlays rather than small
+  icons. Garment illustrations also show up as the thumbnail on the
+  Wardrobe page grid when one exists, falling back to a real photo, then a
+  plain color swatch.
 - `RETIRED_ITEMS` (the "Letting Go" segment in the admin grid) holds items
   marked not-keeping in your CSV, stored with `keep: false`. Not shown on
   any public page yet, only in the admin grid.

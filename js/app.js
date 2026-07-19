@@ -20,9 +20,14 @@ function garmentTile(g) {
   const a = document.createElement("a");
   a.href = `item.html?id=${g.id}`;
   a.className = "garment-tile fade-in";
-  const swatchInner = g.photo
-    ? `<img src="${g.photo.url}" alt="${g.name}" style="width:100%; height:100%; object-fit:cover;">`
-    : `<span style="color:${g.swatch}">&#9679;</span>`;
+  let swatchInner;
+  if (g.illustration) {
+    swatchInner = `<img src="${g.illustration.url}" alt="${g.name}" style="width:100%; height:100%; object-fit:contain;">`;
+  } else if (g.photo) {
+    swatchInner = `<img src="${g.photo.url}" alt="${g.name}" style="width:100%; height:100%; object-fit:cover;">`;
+  } else {
+    swatchInner = `<span style="color:${g.swatch}">&#9679;</span>`;
+  }
   a.innerHTML = `
     <div class="garment-swatch" style="background:${g.swatch}20; border-bottom-color:${g.swatch}55; overflow:hidden;">
       ${swatchInner}

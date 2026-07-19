@@ -1426,26 +1426,81 @@ section.tight { padding: var(--space-3) 0; }
 
 .doll-piece {
   position: absolute;
-  cursor: pointer;
+  pointer-events: none;
   transform: translate(-50%, -50%);
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
-  transition: filter 0.15s ease, outline 0.15s ease;
 }
 
-.doll-piece:hover { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15)) brightness(1.05); }
-
-.doll-piece.active {
-  outline: 2px solid var(--indigo);
-  outline-offset: 3px;
-  border-radius: 2px;
-}
-
-.doll-detail {
+.doll-picker {
   border: 1px solid var(--line);
   background: var(--paper);
-  padding: var(--space-3);
-  min-height: 200px;
+  padding: var(--space-2);
+  max-height: 460px;
+  overflow-y: auto;
 }
+
+.doll-picker-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6em;
+  margin-bottom: 0.6em;
+}
+
+.doll-picker-toolbar button {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 0.3em 0.8em;
+  cursor: pointer;
+  color: var(--ink-soft);
+}
+
+.doll-picker-toolbar button:hover { border-color: var(--indigo); color: var(--indigo); }
+
+.doll-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  padding: 0.5em 0.2em;
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--paper);
+}
+
+.doll-picker-row.dragging { opacity: 0.5; }
+
+.doll-drag-handle {
+  cursor: grab;
+  color: var(--ink-soft);
+  font-size: 1rem;
+  touch-action: none;
+  padding: 0.2em;
+  user-select: none;
+}
+
+.doll-picker-thumb {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  background: var(--paper-deep);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.doll-picker-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  font-size: 0.85rem;
+  cursor: pointer;
+  flex: 1;
+}
+
+.doll-picker-check { accent-color: var(--indigo); width: 15px; height: 15px; }
 
 /* ---------- admin paper doll: draggable + resizable pieces ---------- */
 
