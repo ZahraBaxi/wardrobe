@@ -430,7 +430,7 @@ function renderDollAdmin() {
   var list = document.querySelector('#doll-piece-list');
   var count = document.querySelector('#doll-piece-count');
 
-  stage.querySelectorAll('.doll-piece').forEach(function (el) { el.remove(); });
+  stage.querySelectorAll('.doll-piece-wrap').forEach(function (el) { el.remove(); });
 
   if (!dollConfig || !dollConfig.characterImage) {
     stage.style.backgroundImage = '';
