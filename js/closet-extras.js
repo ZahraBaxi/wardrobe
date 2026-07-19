@@ -384,11 +384,16 @@ function openFieldNoteEdit(id) {
 
 var dollConfig = null;
 var dollDragging = null;
+var hiddenDollIds = new Set(); // admin-only, session-local, doesn't touch saved data
 
 async function initDollTab() {
   document.querySelector('#doll-char-input').addEventListener('change', handleCharUpload);
   document.querySelector('#doll-char-dropzone').addEventListener('click', function () {
     document.querySelector('#doll-char-input').click();
+  });
+  document.querySelector('#doll-show-all-btn').addEventListener('click', function () {
+    hiddenDollIds = new Set();
+    renderDollAdmin();
   });
   await loadExtrasGarments();
   await reloadDollTab();
@@ -437,10 +442,12 @@ function renderDollAdmin() {
 
   var allGarments = extrasGarments.filter(function (g) { return g.keep; });
   var placed = allGarments.filter(function (g) { return g.illustration && g.dollX != null && g.dollY != null; });
+  var visiblePlaced = placed.filter(function (g) { return !hiddenDollIds.has(g.id); });
 
-  count.textContent = placed.length + ' of ' + allGarments.length + ' active items placed';
+  count.textContent = placed.length + ' of ' + allGarments.length + ' active items placed' +
+    (hiddenDollIds.size ? ' (' + hiddenDollIds.size + ' hidden while you work)' : '');
 
-  placed.forEach(function (g) {
+  visiblePlaced.forEach(function (g) {
     var wrap = document.createElement('div');
     wrap.className = 'doll-piece-wrap';
     wrap.style.left = g.dollX + '%';
@@ -516,14 +523,18 @@ function renderDollAdmin() {
   list.innerHTML = allGarments
     .map(function (g) {
       var hasIllustration = !!g.illustration;
+      var isPlaced = hasIllustration && g.dollX != null;
+      var isHidden = hiddenDollIds.has(g.id);
       return (
-        '<div class="manage-row" data-id="' + g.id + '" style="grid-template-columns: 40px 2fr 1fr auto">' +
+        '<div class="manage-row" data-id="' + g.id + '" style="grid-template-columns: 40px 2fr 1fr auto' + (isHidden ? '; opacity:0.5' : '') + '">' +
           '<span class="row-swatch" style="background:' + g.swatch + '"></span>' +
-          '<span class="row-name">' + escHtmlM(g.name) + '</span>' +
+          '<span class="row-name">' + escHtmlM(g.name) + (isHidden ? ' (hidden)' : '') + '</span>' +
           '<span class="row-meta">' + (hasIllustration ? 'has illustration' : 'no illustration') + '</span>' +
           '<span class="row-actions">' +
             '<input type="file" accept="image/*" class="doll-illustration-input" style="display:none">' +
             '<button type="button" class="doll-upload-btn">' + (hasIllustration ? 'Replace' : 'Upload') + '</button>' +
+            (isPlaced ? '<button type="button" class="doll-hide-btn">' + (isHidden ? 'Show' : 'Hide') + '</button>' : '') +
+            (isPlaced ? '<button type="button" class="doll-solo-btn">Solo</button>' : '') +
             (hasIllustration ? '<button type="button" class="danger doll-remove-btn">Remove from Doll</button>' : '') +
           '</span>' +
         '</div>' +
@@ -578,6 +589,23 @@ function renderDollAdmin() {
     });
   });
 
+  list.querySelectorAll('.doll-hide-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = btn.closest('.manage-row').dataset.id;
+      if (hiddenDollIds.has(id)) hiddenDollIds.delete(id);
+      else hiddenDollIds.add(id);
+      renderDollAdmin();
+    });
+  });
+
+  list.querySelectorAll('.doll-solo-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = btn.closest('.manage-row').dataset.id;
+      hiddenDollIds = new Set(placed.map(function (g) { return g.id; }).filter(function (pid) { return pid !== id; }));
+      renderDollAdmin();
+    });
+  });
+
   list.querySelectorAll('.doll-remove-btn').forEach(function (btn) {
     btn.addEventListener('click', async function () {
       var id = btn.closest('.manage-row').dataset.id;
@@ -588,6 +616,7 @@ function renderDollAdmin() {
         g.illustration = null;
         g.dollX = null;
         g.dollY = null;
+        hiddenDollIds.delete(id);
         renderDollAdmin();
         showToast('removed from doll');
       } catch (error) {
