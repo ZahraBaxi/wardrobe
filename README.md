@@ -47,6 +47,27 @@ own app (App ID `rLyvaf4wL6oXTKqKyOXLLHjQJWBAU2aJqmOb08Pg`):
 Every public page fetches live, so an edit in Closet Admin shows up everywhere
 immediately.
 
+## Site-Wide Passcode
+
+Every public page (everything except Closet Admin, which already has its
+own separate login) is now gated behind the same passcode, checked
+against the same `adminLogin` Cloud Code function described below. It
+uses `js/site-lock.js`, included as the very first script on each page so
+the lock screen covers the site before anything else can flash on
+screen.
+
+Unlike the admin page's login, which deliberately asks again on every
+refresh, this one uses `sessionStorage` so browsing from page to page
+doesn't ask again every time, it clears automatically when the browser
+tab closes. A small "Lock" button appears in the bottom-right corner once
+unlocked, click it to lock the site again without waiting for the tab to
+close.
+
+This is a front-end gate only, same caveat as the admin login below:
+your Back4App classes still need public read access for the site to
+function at all, so this hides the UI from casual visitors but isn't
+real security.
+
 ## Closet Admin (owner only)
 
 `closet-admin.html` is login-gated, and now linked right in the main nav since
@@ -125,6 +146,13 @@ No build tools or npm install are required, it's plain HTML/CSS/JS talking to
 Back4App over `fetch()`.
 
 ## Notes
+
+- Every local CSS/JS file is loaded with a `?v=2` on the end
+  (`css/style.css?v=2`, `js/app.js?v=2`, etc.). Browsers cache `.js` and
+  `.css` files aggressively, so after editing any of them, bump that
+  number across the HTML files (or just search-and-replace `?v=2` with
+  `?v=3`), otherwise visitors, and you, may keep seeing the old version
+  even after a normal refresh.
 
 - Colors, fonts, and layout follow the Indigo Americana design brief: warm
   paper background, Source Serif display type, Inter body type, IBM Plex

@@ -1708,3 +1708,47 @@ section.tight { padding: var(--space-3) 0; }
 
   table.spec-table td:first-child { width: 44%; }
 }
+
+/* ---------- site-wide passcode lock ---------- */
+
+html.site-locked, html.site-locked body {
+  overflow: hidden;
+  height: 100%;
+}
+
+#site-lock-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--paper);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3);
+  overflow-y: auto;
+}
+
+#site-lock-overlay .login-shell {
+  margin: 0;
+  width: 100%;
+}
+
+#site-relock-btn {
+  position: fixed;
+  bottom: 1em;
+  right: 1em;
+  z-index: 40;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 0.4em 0.9em;
+  cursor: pointer;
+  color: var(--ink-soft);
+  opacity: 0.55;
+}
+
+#site-relock-btn:hover { opacity: 1; border-color: var(--indigo); color: var(--indigo); }
